@@ -1,0 +1,254 @@
+:root {
+  --bg: #f5f0e6;
+  --surface: #ffffff;
+  --surface-subtle: #ede7da;
+  --text: #1c1b18;
+  --muted: #78736a;
+  --border: #dfdad0;
+  --die-bg: #ffffff;
+  --die-border: #1c1b18;
+  --pip: #1c1b18;
+  --red: #d9463e;
+  --red-soft: rgba(217, 70, 62, 0.12);
+  --accent: #1c1b18;
+  --accent-fg: #f5f0e6;
+  --shadow: rgba(28, 27, 24, 0.07);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d0d0d;
+    --surface: #171717;
+    --surface-subtle: #1f1f1f;
+    --text: #f2ede4;
+    --muted: #8a857c;
+    --border: #2a2a2a;
+    --die-bg: #171717;
+    --die-border: #e5e0d8;
+    --pip: #f2ede4;
+    --red: #e5534b;
+    --red-soft: rgba(229, 83, 75, 0.16);
+    --accent: #f2ede4;
+    --accent-fg: #0d0d0d;
+    --shadow: rgba(0, 0, 0, 0.45);
+  }
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  min-height: 100dvh;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  touch-action: manipulation;
+}
+
+button, input {
+  font-family: inherit;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Buttons */
+.btn-primary {
+  width: 100%;
+  background: var(--accent);
+  color: var(--accent-fg);
+  border: none;
+  border-radius: 14px;
+  padding: 15px 22px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: opacity 0.15s ease, transform 0.1s ease, background-color 0.15s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.92;
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn-primary:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: border-color 0.15s ease, transform 0.1s ease, background-color 0.15s ease;
+}
+
+.btn-ghost:hover {
+  border-color: var(--text);
+}
+
+.btn-ghost:active {
+  transform: scale(0.96);
+}
+
+/* Screens & Cards */
+.center-screen {
+  width: 100%;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 22px;
+  padding: clamp(24px, 5vw, 32px);
+  box-shadow: 0 12px 32px var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.brand-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.brand-title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.brand-sub {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Shared Die & Pips */
+.die {
+  background: var(--die-bg);
+  border: 2px solid var(--die-border);
+  border-radius: 16px;
+  box-shadow: 0 6px 18px var(--shadow);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  position: relative;
+  transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.die.rolling {
+  animation: shake 0.3s ease-in-out infinite;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(-4px, -5px) rotate(-6deg); }
+  50% { transform: translate(4px, 3px) rotate(6deg); }
+  75% { transform: translate(-3px, 4px) rotate(-4deg); }
+}
+
+.pip {
+  width: 72%;
+  height: 72%;
+  margin: auto;
+  border-radius: 50%;
+  background: var(--pip);
+  opacity: 0;
+  transform: scale(0.4);
+  transition: opacity 0.1s ease, transform 0.12s ease;
+}
+
+.pip.active {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.die[data-val="1"] .pip.active {
+  background: var(--red);
+  width: 88%;
+  height: 88%;
+}
+
+/* Modals */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 13, 13, 0.55);
+  backdrop-filter: blur(3px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 1;
+  transition: opacity 0.18s ease, visibility 0.18s ease;
+}
+
+.modal-backdrop.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 420px;
+  max-height: 85dvh;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 22px;
+  padding: 26px;
+  box-shadow: 0 18px 40px var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.modal-title {
+  font-size: 20px;
+  font-weight: 700;
+}

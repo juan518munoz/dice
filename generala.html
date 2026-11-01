@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Generala — Dice</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/generala.css" />
+  <script src="https://unpkg.com/mqtt@5.10.3/dist/mqtt.min.js"></script>
+  <script defer src="js/dice-ui.js"></script>
+  <script defer src="js/generala/rules.js"></script>
+  <script defer src="js/generala/network.js"></script>
+  <script defer src="js/generala/app.js"></script>
+</head>
+<body>
+
+  <!-- 1. JOIN / CREATE LOBBY SCREEN -->
+  <section class="screen center-screen active" id="screen-auth">
+    <div class="card">
+      <div class="brand-header">
+        <h1 class="brand-title">Generala</h1>
+        <p class="brand-sub">Enter a room key to create or join a live lobby</p>
+      </div>
+
+      <form class="field-group" id="form-join">
+        <div class="field">
+          <label for="input-name">Your Name</label>
+          <input id="input-name" type="text" placeholder="e.g. Juan" maxlength="16" required autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="input-key">Lobby Key</label>
+          <input id="input-key" class="key-input" type="text" placeholder="e.g. PREVIA" maxlength="16" required autocomplete="off" />
+        </div>
+        <button type="submit" class="btn-primary" id="btn-enter-lobby">
+          Enter Lobby
+        </button>
+      </form>
+
+      <div style="display: flex; justify-content: center; gap: 10px;">
+        <a class="btn-ghost" href="index.html">← Home</a>
+        <button type="button" class="btn-ghost" id="btn-open-rules-auth">
+          Rules &amp; Scoring
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. LOBBY WAITING ROOM SCREEN -->
+  <section class="screen center-screen" id="screen-lobby">
+    <div class="card">
+      <div class="brand-header">
+        <h2 class="brand-title">Lobby</h2>
+        <p class="brand-sub" id="lobby-conn-status">Connected — waiting for players</p>
+      </div>
+
+      <div class="lobby-key-box">
+        <div>
+          <span class="lobby-key-label">Room Key</span>
+          <span class="lobby-key-val" id="lobby-key-display">----</span>
+        </div>
+        <button type="button" class="btn-ghost" id="btn-copy-key">Copy Link</button>
+      </div>
+
+      <div class="players-list">
+        <div class="players-list-header">
+          <span>Players</span>
+          <span id="lobby-player-count">1</span>
+        </div>
+        <div id="lobby-players-container"></div>
+      </div>
+
+      <div id="host-controls" style="display: none; flex-direction: column; gap: 10px;">
+        <button type="button" class="btn-primary" id="btn-start-game">
+          Ready — Start Game
+        </button>
+        <p class="status-note">You are the host. You can start now (even solo) or wait for friends to enter the same key.</p>
+      </div>
+
+      <div id="guest-controls" style="display: none;">
+        <p class="status-note">Waiting for the host to start the game…</p>
+      </div>
+
+      <button type="button" class="btn-ghost" id="btn-leave-lobby" style="align-self: center;">
+        Leave Lobby
+      </button>
+    </div>
+  </section>
+
+  <!-- 3. ACTIVE GAME SCREEN -->
+  <section class="screen game-screen" id="screen-game">
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="conn-dot" id="game-conn-dot" title="Live connection status"></span>
+        <span class="room-pill" id="game-room-pill">KEY: ----</span>
+        <button type="button" class="btn-ghost" id="btn-open-rules-game">Rules</button>
+      </div>
+
+      <div class="turn-banner">
+        <div class="turn-indicator" id="turn-indicator">Turn</div>
+      </div>
+
+      <button type="button" class="btn-ghost" id="btn-exit-game">Leave</button>
+    </header>
+
+    <div class="game-layout">
+      <!-- Left: Dice Stage -->
+      <div class="dice-panel">
+        <div class="dice-panel-header">
+          <div class="rolls-left">
+            Throws
+            <span class="rolls-dots" id="rolls-dots">
+              <span class="roll-pip"></span>
+              <span class="roll-pip"></span>
+              <span class="roll-pip"></span>
+            </span>
+          </div>
+          <div class="hand-callout" id="hand-callout"></div>
+        </div>
+
+        <div class="dice-grid" id="dice-grid"></div>
+
+        <div class="dice-footer">
+          <button type="button" class="btn-primary" id="btn-roll">
+            Roll Dice (3 left)
+          </button>
+          <p class="helper-text" id="dice-helper">
+            Roll the 5 dice to start your turn.
+          </p>
+        </div>
+      </div>
+
+      <!-- Right: Scorecard (Planilla) -->
+      <div class="score-panel">
+        <table class="score-table" id="score-table">
+          <thead id="score-thead"></thead>
+          <tbody id="score-tbody"></tbody>
+          <tfoot id="score-tfoot"></tfoot>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- BOTTOM LIVE CHAT WINDOW (Shown in Lobby & Game) -->
+  <div class="chat-wrapper" id="chat-wrapper">
+    <div class="chat-panel">
+      <div class="chat-header">
+        <span>Room Chat</span>
+      </div>
+      <div class="chat-messages" id="chat-messages" aria-live="polite">
+        <div class="chat-empty">No messages yet — say hi!</div>
+      </div>
+      <form class="chat-form" id="chat-form">
+        <input type="text" class="chat-input" id="chat-input" placeholder="Write a message…" maxlength="200" autocomplete="off" />
+        <button type="submit" class="btn-chat-send">Send</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- RULES MODAL -->
+  <div class="modal-backdrop hidden" id="modal-rules" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <h2 class="modal-title">Generala Rules</h2>
+      <div class="rules-list">
+        <p>On your turn you have up to <strong>3 throws</strong> with 5 dice. Tap any dice you want to keep (<strong>Hold</strong>) and roll the rest.</p>
+        <p>At the end of your turn (or after any throw), record your score in one free row of your column. Making a major hand on the <strong>first throw</strong> counts as <em>Servida</em> and scores bonus points:</p>
+        <dl>
+          <dt>1 to 6</dt>
+          <dd>Sum of all dice showing that number (e.g. three 6s = 18).</dd>
+          <dt>Escalera (1-2-3-4-5, 2-3-4-5-6, or 3-4-5-6-1)</dt>
+          <dd>20 pts — Servida: 25 pts</dd>
+          <dt>Full (3 of a kind + 2 of a kind)</dt>
+          <dd>30 pts — Servido: 35 pts</dd>
+          <dt>Póker (4 of a kind)</dt>
+          <dd>40 pts — Servido: 45 pts</dd>
+          <dt>Generala (5 of a kind)</dt>
+          <dd>50 pts — Servida: 100 pts</dd>
+        </dl>
+        <p>If your roll doesn't fit any open category, tap any free row to cross it out with <strong>0</strong>.</p>
+      </div>
+      <button type="button" class="btn-primary" id="btn-close-rules">Got It</button>
+    </div>
+  </div>
+
+  <!-- WINNER / GAME OVER MODAL -->
+  <div class="modal-backdrop hidden" id="modal-winner" role="dialog" aria-modal="true">
+    <div class="modal-card" style="text-align: center;">
+      <h2 class="modal-title" id="winner-title">Game Over</h2>
+      <p class="brand-sub" id="winner-subtitle"></p>
+      <div class="players-list" id="winner-standings"></div>
+      <button type="button" class="btn-primary" id="btn-play-again" style="display: none;">
+        Play Again
+      </button>
+      <button type="button" class="btn-ghost" id="btn-close-winner" style="align-self: center;">
+        View Scorecard
+      </button>
+    </div>
+  </div>
+
+</body>
+</html>

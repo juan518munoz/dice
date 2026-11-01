@@ -1,0 +1,143 @@
+.roller-screen {
+  width: 100%;
+  min-height: 100dvh;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: clamp(20px, 5vw, 40px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.roller-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.result-display {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.result-label {
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.result-value {
+  font-size: clamp(28px, 6vw, 40px);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.roller-stage {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.roller-dice-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(16px, 4vw, 28px);
+  width: 100%;
+}
+
+.roller-die {
+  width: clamp(76px, 20vw, 112px);
+  height: clamp(76px, 20vw, 112px);
+  border-radius: clamp(16px, 3.5vw, 22px);
+  padding: clamp(12px, 2.8vw, 18px);
+  cursor: default;
+}
+
+.roller-die.pop {
+  transform: scale(1.06);
+}
+
+.roller-footer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+/* Count Picker Stepper */
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+.btn-step {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s ease, transform 0.1s ease;
+}
+
+.btn-step:hover {
+  border-color: var(--text);
+}
+
+.btn-step:active {
+  transform: scale(0.93);
+}
+
+.count-number {
+  font-size: 56px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  min-width: 72px;
+  line-height: 1;
+  text-align: center;
+}
+
+.quick-picks {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-pick {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-pick.active {
+  border-color: var(--text);
+  color: var(--text);
+  background: var(--bg);
+}

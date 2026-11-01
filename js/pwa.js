@@ -1,12 +1,5 @@
 (function () {
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.protocol === 'http:')) {
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (refreshing) return;
-      refreshing = true;
-      window.location.reload();
-    });
-
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./sw.js').then((reg) => {
         try { reg.update(); } catch (_) {}
@@ -35,14 +28,21 @@
     return /Android|iPhone|iPad|iPod|IEMobile|Opera Mini|Mobile/i.test(ua) || isTouchMac;
   }
 
-  let deferredPrompt = null;
+  let deferredPrompt = window.__deferredPwaPrompt || null;
+
+  function revealInstallBarIfEligible() {
+    if (deferredPrompt && isMobileDevice() && !isStandalone()) {
+      installBar.classList.add('visible');
+    }
+  }
+
+  revealInstallBarIfEligible();
 
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    if (isMobileDevice() && !isStandalone()) {
-      installBar.classList.add('visible');
-    }
+    window.__deferredPwaPrompt = e;
+    revealInstallBarIfEligible();
   });
 
   window.addEventListener('appinstalled', () => {

@@ -14,6 +14,11 @@
   <link rel="stylesheet" href="css/base.css" />
   <script defer src="js/pwa.js"></script>
   <script>
+    window.__deferredPwaPrompt = null;
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      window.__deferredPwaPrompt = e;
+    });
     const params = new URLSearchParams(window.location.search);
     if (params.get('room')) {
       window.location.replace('generala.html?room=' + encodeURIComponent(params.get('room')));

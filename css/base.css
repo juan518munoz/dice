@@ -160,8 +160,7 @@ a {
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.45);
 }
 
-/* Blue variant for first home button */
-.field-group a.btn-primary:first-child {
+.btn-primary.btn-blue {
   background: var(--chips-blue);
   box-shadow:
     inset 0 2px 0 rgba(255, 255, 255, 0.32),
@@ -169,17 +168,61 @@ a {
     0 8px 14px rgba(0, 0, 0, 0.5);
 }
 
-.field-group a.btn-primary:first-child:hover {
+.btn-primary.btn-blue:hover:not(:disabled) {
   box-shadow:
     inset 0 2px 0 rgba(255, 255, 255, 0.35),
     0 6px 0 var(--chips-blue-lip),
     0 10px 16px rgba(0, 0, 0, 0.55);
 }
 
-.field-group a.btn-primary:first-child:active {
+.btn-primary.btn-blue:active:not(:disabled) {
   box-shadow:
     inset 0 2px 0 rgba(255, 255, 255, 0.2),
     0 1px 0 var(--chips-blue-lip),
+    0 3px 6px rgba(0, 0, 0, 0.45);
+}
+
+.btn-primary.btn-orange {
+  background: var(--orange);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.32),
+    0 5px 0 var(--orange-lip),
+    0 8px 14px rgba(0, 0, 0, 0.5);
+}
+
+.btn-primary.btn-orange:hover:not(:disabled) {
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.35),
+    0 6px 0 var(--orange-lip),
+    0 10px 16px rgba(0, 0, 0, 0.55);
+}
+
+.btn-primary.btn-orange:active:not(:disabled) {
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.2),
+    0 1px 0 var(--orange-lip),
+    0 3px 6px rgba(0, 0, 0, 0.45);
+}
+
+.btn-primary.btn-green {
+  background: var(--green);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.32),
+    0 5px 0 var(--green-lip),
+    0 8px 14px rgba(0, 0, 0, 0.5);
+}
+
+.btn-primary.btn-green:hover:not(:disabled) {
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.35),
+    0 6px 0 var(--green-lip),
+    0 10px 16px rgba(0, 0, 0, 0.55);
+}
+
+.btn-primary.btn-green:active:not(:disabled) {
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.2),
+    0 1px 0 var(--green-lip),
     0 3px 6px rgba(0, 0, 0, 0.45);
 }
 

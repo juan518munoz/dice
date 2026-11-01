@@ -1,9 +1,10 @@
-const CACHE_NAME = 'dice-pwa-v4';
+const CACHE_NAME = 'dice-pwa-v5';
 const ASSETS = [
   './',
   './index.html',
   './roller.html',
   './generala.html',
+  './truco.html',
   './manifest.webmanifest',
   './assets/favicon.svg',
   './assets/apple-touch-icon.png',
@@ -12,13 +13,18 @@ const ASSETS = [
   './css/base.css',
   './css/roller.css',
   './css/generala.css',
+  './css/truco.css',
   './js/pwa.js',
   './js/dice-ui.js',
   './js/roller.js',
   './js/generala/rules.js',
   './js/generala/notifications.js',
   './js/generala/network.js',
-  './js/generala/app.js'
+  './js/generala/app.js',
+  './js/truco/rules.js',
+  './js/truco/cards-ui.js',
+  './js/truco/network.js',
+  './js/truco/app.js'
 ];
 
 self.addEventListener('install', (event) => {

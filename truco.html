@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Truco — Dice</title>
+  <meta name="theme-color" content="#133327" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Dice" />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/generala.css" />
+  <link rel="stylesheet" href="css/truco.css" />
+  <script defer src="js/pwa.js"></script>
+  <script src="https://unpkg.com/mqtt@5.10.3/dist/mqtt.min.js"></script>
+  <script defer src="js/generala/notifications.js"></script>
+  <script defer src="js/truco/rules.js"></script>
+  <script defer src="js/truco/cards-ui.js"></script>
+  <script defer src="js/truco/network.js"></script>
+  <script defer src="js/truco/app.js"></script>
+</head>
+<body>
+
+  <!-- TOP IN-APP NOTIFICATION TOAST -->
+  <div class="notify-toast" id="notify-toast" role="status" aria-live="polite">
+    <span class="notify-toast-title" id="notify-toast-title"></span>
+    <span class="notify-toast-body" id="notify-toast-body"></span>
+  </div>
+
+  <!-- 1. JOIN / CREATE LOBBY SCREEN -->
+  <section class="screen center-screen active" id="screen-auth">
+    <div class="card">
+      <div class="brand-header">
+        <h1 class="brand-title">Truco 1v1</h1>
+        <p class="brand-sub">Argentine Truco to 30 pts (Sin Flor)</p>
+      </div>
+
+      <form class="field-group" id="form-join">
+        <div class="field">
+          <label for="input-name">Your Name</label>
+          <input id="input-name" type="text" placeholder="e.g. Juan" maxlength="16" required autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="input-key">Lobby Key</label>
+          <input id="input-key" class="key-input" type="text" placeholder="e.g. ASADO" maxlength="16" required autocomplete="off" />
+        </div>
+        <button type="submit" class="btn-primary" id="btn-enter-lobby">
+          Enter Lobby
+        </button>
+      </form>
+
+      <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+        <a class="btn-ghost" href="index.html">← Home</a>
+        <button type="button" class="btn-ghost" id="btn-open-rules-auth">
+          Rules &amp; Cards
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. LOBBY WAITING ROOM SCREEN -->
+  <section class="screen center-screen" id="screen-lobby">
+    <div class="card">
+      <div class="brand-header">
+        <h2 class="brand-title">Truco Lobby</h2>
+        <p class="brand-sub" id="lobby-conn-status">1v1 Room — 2 players required</p>
+      </div>
+
+      <div class="lobby-key-box">
+        <div>
+          <span class="lobby-key-label">Room Key</span>
+          <span class="lobby-key-val" id="lobby-key-display">----</span>
+        </div>
+        <button type="button" class="btn-ghost" id="btn-copy-key">Copy Link</button>
+      </div>
+
+      <div class="players-list">
+        <div class="players-list-header">
+          <span>Players (1v1)</span>
+          <span><span id="lobby-player-count">1</span> / 2</span>
+        </div>
+        <div id="lobby-players-container"></div>
+      </div>
+
+      <div id="host-controls" style="display: none; flex-direction: column; gap: 10px;">
+        <button type="button" class="btn-primary" id="btn-start-game">
+          Start 1v1 Match
+        </button>
+        <p class="status-note" id="host-status-note">Waiting for your opponent to join the room…</p>
+      </div>
+
+      <div id="guest-controls" style="display: none;">
+        <p class="status-note">Waiting for the host to start the match…</p>
+      </div>
+
+      <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+        <button type="button" class="btn-ghost" id="btn-notify-lobby">
+          Alerts: On
+        </button>
+        <button type="button" class="btn-ghost" id="btn-leave-lobby">
+          Leave Lobby
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. ACTIVE GAME SCREEN -->
+  <section class="screen game-screen" id="screen-game">
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="conn-dot" id="game-conn-dot" title="Live connection status"></span>
+        <span class="room-pill" id="game-room-pill">KEY: ----</span>
+        <button type="button" class="btn-ghost" id="btn-open-rules-game">Rules</button>
+        <button type="button" class="btn-ghost" id="btn-notify-game">Alerts: On</button>
+      </div>
+
+      <div class="turn-banner">
+        <div class="turn-indicator" id="turn-indicator">Turn</div>
+      </div>
+
+      <button type="button" class="btn-ghost" id="btn-exit-game">Leave</button>
+    </header>
+
+    <div class="game-layout">
+      <!-- Left: Card Table & Action Controls -->
+      <div class="truco-table-panel">
+        <div class="truco-hud-strip">
+          <div class="balatro-mult-box">
+            <span class="b-chip" id="hud-hand-num">MANO #1</span>
+            <span class="b-times">×</span>
+            <span class="b-mult" id="hud-stake-pts">1 PT</span>
+          </div>
+          <div class="envido-pill" id="hud-my-envido">MI TANTO: --</div>
+        </div>
+
+        <!-- Green Felt Arena -->
+        <div class="truco-felt-arena">
+          <!-- Opponent Area -->
+          <div class="arena-player-row opponent-row">
+            <div class="arena-player-info">
+              <span class="arena-player-name" id="opp-name">Rival</span>
+              <span class="mano-tag" id="opp-mano-tag" style="display: none;">MANO</span>
+              <div class="speech-bubble" id="opp-speech" style="display: none;"></div>
+            </div>
+            <div class="opponent-cards-row" id="opp-cards-row"></div>
+          </div>
+
+          <!-- 3 Tricks / Bazas Table Slots -->
+          <div class="tricks-board" id="tricks-board">
+            <div class="trick-col" data-trick="0">
+              <span class="trick-title">1ª Baza</span>
+              <div class="trick-slots" id="trick-slot-0"></div>
+              <span class="trick-badge" id="trick-badge-0"></span>
+            </div>
+            <div class="trick-col" data-trick="1">
+              <span class="trick-title">2ª Baza</span>
+              <div class="trick-slots" id="trick-slot-1"></div>
+              <span class="trick-badge" id="trick-badge-1"></span>
+            </div>
+            <div class="trick-col" data-trick="2">
+              <span class="trick-title">3ª Baza</span>
+              <div class="trick-slots" id="trick-slot-2"></div>
+              <span class="trick-badge" id="trick-badge-2"></span>
+            </div>
+          </div>
+
+          <!-- My Hand Area -->
+          <div class="arena-player-row my-row">
+            <div class="arena-player-info">
+              <span class="arena-player-name" id="my-name">You</span>
+              <span class="mano-tag" id="my-mano-tag" style="display: none;">MANO</span>
+              <div class="speech-bubble me" id="my-speech" style="display: none;"></div>
+            </div>
+            <div class="my-cards-row" id="my-cards-row"></div>
+          </div>
+        </div>
+
+        <!-- Status & Call Controls -->
+        <div class="truco-controls-area">
+          <div class="action-banner" id="action-banner">Waiting…</div>
+          <div class="envido-banner" id="envido-banner" style="display: none;"></div>
+
+          <!-- Dynamic Call / Response Buttons -->
+          <div class="truco-buttons-wrap" id="truco-buttons-wrap"></div>
+        </div>
+      </div>
+
+      <!-- Right: 30-Point Scoreboard (Malas & Buenas) -->
+      <div class="score-panel truco-score-panel">
+        <div class="truco-score-header">
+          <span>PUNTAJE (A 30 PUNTOS)</span>
+          <span class="sin-flor-tag">SIN FLOR</span>
+        </div>
+
+        <div class="truco-scoreboard-grid">
+          <!-- Player 0 Column -->
+          <div class="tscore-col" id="tscore-col-0">
+            <div class="tscore-player-head">
+              <span class="tscore-name" id="tscore-name-0">Player 1</span>
+              <span class="tscore-stage-badge" id="tscore-stage-0">Malas</span>
+            </div>
+
+            <div class="tscore-half">
+              <div class="tscore-half-label">
+                <span>Malas (0–15)</span>
+                <span id="tscore-malas-num-0">0 / 15</span>
+              </div>
+              <div id="tscore-malas-fosf-0"></div>
+            </div>
+
+            <div class="tscore-half">
+              <div class="tscore-half-label">
+                <span>Buenas (15–30)</span>
+                <span id="tscore-buenas-num-0">0 / 15</span>
+              </div>
+              <div id="tscore-buenas-fosf-0"></div>
+            </div>
+
+            <div class="tscore-total-box">
+              <span>TOTAL</span>
+              <span class="tscore-total-val" id="tscore-total-0">0</span>
+            </div>
+          </div>
+
+          <!-- Player 1 Column -->
+          <div class="tscore-col" id="tscore-col-1">
+            <div class="tscore-player-head">
+              <span class="tscore-name" id="tscore-name-1">Player 2</span>
+              <span class="tscore-stage-badge" id="tscore-stage-1">Malas</span>
+            </div>
+
+            <div class="tscore-half">
+              <div class="tscore-half-label">
+                <span>Malas (0–15)</span>
+                <span id="tscore-malas-num-1">0 / 15</span>
+              </div>
+              <div id="tscore-malas-fosf-1"></div>
+            </div>
+
+            <div class="tscore-half">
+              <div class="tscore-half-label">
+                <span>Buenas (15–30)</span>
+                <span id="tscore-buenas-num-1">0 / 15</span>
+              </div>
+              <div id="tscore-buenas-fosf-1"></div>
+            </div>
+
+            <div class="tscore-total-box">
+              <span>TOTAL</span>
+              <span class="tscore-total-val" id="tscore-total-1">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BOTTOM LIVE CHAT WINDOW (Shown in Lobby & Game) -->
+  <div class="chat-wrapper" id="chat-wrapper">
+    <div class="chat-panel">
+      <div class="chat-header">
+        <span>Room Chat</span>
+      </div>
+      <div class="chat-messages" id="chat-messages" aria-live="polite">
+        <div class="chat-empty">No messages yet — say hi!</div>
+      </div>
+      <form class="chat-form" id="chat-form">
+        <input type="text" class="chat-input" id="chat-input" placeholder="Write a message…" maxlength="200" autocomplete="off" />
+        <button type="submit" class="btn-chat-send">Send</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- RULES MODAL -->
+  <div class="modal-backdrop hidden" id="modal-rules" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <h2 class="modal-title">Truco Argentino (1v1)</h2>
+      <div class="rules-list">
+        <p>Played to <strong>30 points</strong> split into <strong>15 Malas</strong> and <strong>15 Buenas</strong> (no Flor).</p>
+        <dl>
+          <dt>Card Hierarchy (Highest to Lowest)</dt>
+          <dd>1 Espada → 1 Basto → 7 Espada → 7 Oro → 3s → 2s → 1 Oro / 1 Copa → 12s → 11s → 10s → 7 Basto / 7 Copa → 6s → 5s → 4s.</dd>
+          <dt>Bazas &amp; Parda (Tie)</dt>
+          <dd>Best of 3 tricks wins the hand. If 1st trick is Parda (tie), 2nd trick decides. If 2nd or 3rd trick is Parda, the winner of the 1st trick wins the hand.</dd>
+          <dt>Envido (1st Trick Only)</dt>
+          <dd>2 cards of the same suit add 20 + their values (10, 11, 12 count as 0). Envido (2 pts), Real Envido (3 pts), Falta Envido (wins match if both in Malas; otherwise points needed by the leader to reach 30). Ties go to <strong>Mano</strong>.</dd>
+          <dt>Truco / Retruco / Vale Cuatro</dt>
+          <dd>Raises hand stake to 2, 3, and 4 points.</dd>
+        </dl>
+      </div>
+      <button type="button" class="btn-primary" id="btn-close-rules">Got It</button>
+    </div>
+  </div>
+
+  <!-- WINNER / GAME OVER MODAL -->
+  <div class="modal-backdrop hidden" id="modal-winner" role="dialog" aria-modal="true">
+    <div class="modal-card" style="text-align: center;">
+      <h2 class="modal-title" id="winner-title">Match Complete!</h2>
+      <p class="brand-sub" id="winner-subtitle"></p>
+      <div class="players-list" id="winner-standings"></div>
+      <button type="button" class="btn-primary" id="btn-play-again">
+        Play Again
+      </button>
+      <button type="button" class="btn-ghost" id="btn-close-winner" style="align-self: center;">
+        View Table
+      </button>
+    </div>
+  </div>
+
+</body>
+</html>

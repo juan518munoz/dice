@@ -357,7 +357,7 @@
           td.addEventListener('click', () => onSelectScore(cat.id));
         } else {
           td.textContent = '—';
-          td.style.color = 'var(--border)';
+          td.style.color = '#586971';
         }
         tr.appendChild(td);
       });

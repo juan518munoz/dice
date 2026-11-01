@@ -1,37 +1,50 @@
-:root {
-  --bg: #f5f0e6;
-  --surface: #ffffff;
-  --surface-subtle: #ede7da;
-  --text: #1c1b18;
-  --muted: #78736a;
-  --border: #dfdad0;
-  --die-bg: #ffffff;
-  --die-border: #1c1b18;
-  --pip: #1c1b18;
-  --red: #2563eb;
-  --red-soft: rgba(37, 99, 235, 0.12);
-  --accent: #1c1b18;
-  --accent-fg: #f5f0e6;
-  --shadow: rgba(28, 27, 24, 0.07);
-}
+@import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;600;700&family=VT323&display=swap');
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0d0d0d;
-    --surface: #171717;
-    --surface-subtle: #1f1f1f;
-    --text: #f2ede4;
-    --muted: #8a857c;
-    --border: #2a2a2a;
-    --die-bg: #171717;
-    --die-border: #e5e0d8;
-    --pip: #f2ede4;
-    --red: #3b82f6;
-    --red-soft: rgba(59, 130, 246, 0.18);
-    --accent: #f2ede4;
-    --accent-fg: #0d0d0d;
-    --shadow: rgba(0, 0, 0, 0.45);
-  }
+:root {
+  /* Balatro Palette */
+  --felt-dark: #133327;
+  --felt-mid: #1f523f;
+  --felt-light: #2b6e55;
+  --felt-accent: #184233;
+
+  --hud-bg: #222b30;
+  --hud-bg-raised: #2c383e;
+  --hud-well: #141a1d;
+  --hud-border: #0b0f11;
+  --hud-inner-line: #394850;
+
+  --text: #fffdf5;
+  --muted: #9eb0b8;
+  --border: #36444c;
+
+  /* Balatro Signature Accents */
+  --mult-red: #fe5f55;
+  --mult-red-lip: #9e2820;
+  --chips-blue: #009dff;
+  --chips-blue-lip: #005b99;
+  --gold: #f5b841;
+  --gold-lip: #9c650c;
+  --orange: #ff981f;
+  --orange-lip: #a85400;
+  --green: #38b87c;
+  --green-lip: #1d6e47;
+  --purple: #8867a5;
+
+  /* Card-Stock Dice */
+  --die-bg: #fffdf5;
+  --die-lip: #cfc8b8;
+  --die-border: #141a1d;
+  --pip: #1e272c;
+
+  /* Legacy variable aliases mapped to Balatro theme */
+  --bg: var(--hud-well);
+  --surface: var(--hud-bg);
+  --surface-subtle: var(--hud-bg-raised);
+  --red: var(--mult-red);
+  --red-soft: rgba(254, 95, 85, 0.2);
+  --accent: var(--mult-red);
+  --accent-fg: #fffdf5;
+  --shadow: rgba(0, 0, 0, 0.65);
 }
 
 * {
@@ -46,11 +59,44 @@
 html, body {
   width: 100%;
   min-height: 100dvh;
-  background-color: var(--bg);
+  background-color: var(--felt-dark);
+  background-image:
+    radial-gradient(circle at 20% 25%, rgba(43, 110, 85, 0.85) 0%, transparent 45%),
+    radial-gradient(circle at 80% 70%, rgba(31, 82, 63, 0.9) 0%, transparent 50%),
+    radial-gradient(circle at 55% 15%, rgba(56, 142, 108, 0.45) 0%, transparent 40%),
+    radial-gradient(circle at 30% 85%, rgba(15, 42, 32, 0.95) 0%, transparent 50%),
+    repeating-conic-gradient(
+      from 15deg at 50% 50%,
+      #1b4938 0deg 30deg,
+      #163d2f 30deg 60deg,
+      #215743 60deg 90deg
+    );
+  background-attachment: fixed;
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Pixelify Sans', 'Courier New', monospace;
+  letter-spacing: 0.02em;
   -webkit-font-smoothing: antialiased;
   touch-action: manipulation;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Subtle CRT scanlines + vignette overlay */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.015) 0px,
+      rgba(255, 255, 255, 0.015) 1px,
+      rgba(0, 0, 0, 0.09) 2px,
+      rgba(0, 0, 0, 0.09) 3px
+    ),
+    radial-gradient(circle at center, transparent 58%, rgba(0, 0, 0, 0.52) 100%);
 }
 
 button, input {
@@ -62,62 +108,120 @@ a {
   color: inherit;
 }
 
-/* Buttons */
+/* Chunky 3D Balatro Buttons */
 .btn-primary {
   width: 100%;
-  background: var(--accent);
-  color: var(--accent-fg);
-  border: none;
-  border-radius: 14px;
-  padding: 15px 22px;
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  background: var(--mult-red);
+  color: #fffdf5;
+  border: 3px solid var(--hud-border);
+  border-radius: 12px;
+  padding: 14px 22px;
+  font-size: 18px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.65);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.32),
+    0 5px 0 var(--mult-red-lip),
+    0 8px 14px rgba(0, 0, 0, 0.5);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-  transition: opacity 0.15s ease, transform 0.1s ease, background-color 0.15s ease;
+  transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.12s ease;
 }
 
 .btn-primary:hover:not(:disabled) {
-  opacity: 0.92;
+  filter: brightness(1.07);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.35),
+    0 6px 0 var(--mult-red-lip),
+    0 10px 16px rgba(0, 0, 0, 0.55);
 }
 
 .btn-primary:active:not(:disabled) {
-  transform: scale(0.98);
+  transform: translateY(4px);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.2),
+    0 1px 0 var(--mult-red-lip),
+    0 3px 6px rgba(0, 0, 0, 0.45);
 }
 
 .btn-primary:disabled {
-  opacity: 0.35;
+  background: #334047;
+  color: #8898a0;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.06),
+    0 4px 0 #182024;
   cursor: not-allowed;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.45);
+}
+
+/* Blue variant for first home button */
+.field-group a.btn-primary:first-child {
+  background: var(--chips-blue);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.32),
+    0 5px 0 var(--chips-blue-lip),
+    0 8px 14px rgba(0, 0, 0, 0.5);
+}
+
+.field-group a.btn-primary:first-child:hover {
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.35),
+    0 6px 0 var(--chips-blue-lip),
+    0 10px 16px rgba(0, 0, 0, 0.55);
+}
+
+.field-group a.btn-primary:first-child:active {
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.2),
+    0 1px 0 var(--chips-blue-lip),
+    0 3px 6px rgba(0, 0, 0, 0.45);
 }
 
 .btn-ghost {
-  background: transparent;
+  background: var(--hud-bg-raised);
   color: var(--text);
-  border: 1.5px solid var(--border);
-  border-radius: 999px;
+  border: 2.5px solid var(--hud-border);
+  border-radius: 10px;
   padding: 7px 14px;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.65);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.12),
+    0 4px 0 var(--hud-border),
+    0 6px 10px rgba(0, 0, 0, 0.4);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: border-color 0.15s ease, transform 0.1s ease, background-color 0.15s ease;
+  transition: transform 0.08s ease, box-shadow 0.08s ease, background-color 0.12s ease;
 }
 
 .btn-ghost:hover {
-  border-color: var(--text);
+  background: #38474f;
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.18),
+    0 5px 0 var(--hud-border),
+    0 8px 12px rgba(0, 0, 0, 0.45);
 }
 
 .btn-ghost:active {
-  transform: scale(0.96);
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 1px 0 var(--hud-border);
 }
 
-/* Screens & Cards */
+/* Screens & Cards (Balatro Dark Slate HUD Boxes) */
 .center-screen {
   width: 100%;
   min-height: 100dvh;
@@ -130,15 +234,19 @@ a {
 
 .card {
   width: 100%;
-  max-width: 400px;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: 22px;
-  padding: clamp(24px, 5vw, 32px);
-  box-shadow: 0 12px 32px var(--shadow);
+  max-width: 420px;
+  background: var(--hud-bg);
+  border: 3.5px solid var(--hud-border);
+  border-radius: 18px;
+  padding: clamp(22px, 5vw, 30px);
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.35),
+    0 8px 0 var(--hud-border),
+    0 16px 32px rgba(0, 0, 0, 0.65);
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 20px;
 }
 
 .brand-header {
@@ -147,31 +255,48 @@ a {
   align-items: center;
   gap: 8px;
   text-align: center;
+  background: #c98219;
+  border: 3px solid var(--hud-border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.3),
+    0 4px 0 #754806;
 }
 
 .brand-title {
-  font-size: 24px;
+  font-size: 32px;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #fffdf5;
+  text-shadow: 0 3px 0 #593500, 0 4px 6px rgba(0, 0, 0, 0.5);
 }
 
 .brand-sub {
   font-size: 13px;
-  color: var(--muted);
+  font-weight: 600;
+  color: #fff3d6;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
 }
 
 .field-group {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
-/* Shared Die & Pips */
+/* Playing-Card Styled Dice & Pips */
 .die {
   background: var(--die-bg);
-  border: 2px solid var(--die-border);
-  border-radius: 16px;
-  box-shadow: 0 6px 18px var(--shadow);
+  border: 3px solid var(--die-border);
+  border-radius: 14px;
+  box-shadow:
+    inset 0 2px 0 #ffffff,
+    inset 0 -3px 0 #dfd8c8,
+    0 6px 0 var(--die-lip),
+    0 6px 0 3px var(--die-border),
+    0 12px 18px rgba(0, 0, 0, 0.55);
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(3, 1fr);
@@ -179,25 +304,36 @@ a {
   transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.die.rolling {
-  animation: shake 0.3s ease-in-out infinite;
+/* Inner subtle playing card frame */
+.die::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1.5px solid rgba(20, 26, 29, 0.12);
+  border-radius: 8px;
+  pointer-events: none;
 }
 
-@keyframes shake {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  25% { transform: translate(-4px, -5px) rotate(-6deg); }
-  50% { transform: translate(4px, 3px) rotate(6deg); }
-  75% { transform: translate(-3px, 4px) rotate(-4deg); }
+.die.rolling {
+  animation: balatroShake 0.28s ease-in-out infinite;
+}
+
+@keyframes balatroShake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1.04); }
+  25% { transform: translate(-5px, -6px) rotate(-9deg) scale(1.06); }
+  50% { transform: translate(5px, 4px) rotate(9deg) scale(1.04); }
+  75% { transform: translate(-4px, 5px) rotate(-6deg) scale(1.06); }
 }
 
 .pip {
-  width: 72%;
-  height: 72%;
+  width: 74%;
+  height: 74%;
   margin: auto;
-  border-radius: 50%;
+  border-radius: 4px;
   background: var(--pip);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.22);
   opacity: 0;
-  transform: scale(0.4);
+  transform: scale(0.4) rotate(0deg);
   transition: opacity 0.1s ease, transform 0.12s ease, background-color 0.15s ease;
 }
 
@@ -206,21 +342,41 @@ a {
   transform: scale(1);
 }
 
+/* Suit-inspired Balatro pip colors per die value */
 .die[data-val="1"] .pip.active {
-  width: 88%;
-  height: 88%;
+  width: 92%;
+  height: 92%;
+  border-radius: 6px;
+  background: var(--mult-red);
+  box-shadow: 0 2px 0 var(--mult-red-lip);
 }
 
-.die.held .pip.active {
-  background: var(--red);
+.die[data-val="2"] .pip.active,
+.die[data-val="3"] .pip.active {
+  background: #1b2429;
+}
+
+.die[data-val="4"] .pip.active {
+  background: var(--mult-red);
+  box-shadow: 0 2px 0 var(--mult-red-lip);
+}
+
+.die[data-val="5"] .pip.active {
+  background: var(--chips-blue);
+  box-shadow: 0 2px 0 var(--chips-blue-lip);
+}
+
+.die[data-val="6"] .pip.active {
+  background: var(--orange);
+  box-shadow: 0 2px 0 var(--orange-lip);
 }
 
 /* Modals */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(13, 13, 13, 0.55);
-  backdrop-filter: blur(3px);
+  background: rgba(8, 16, 13, 0.72);
+  backdrop-filter: blur(4px);
   z-index: 100;
   display: flex;
   align-items: center;
@@ -238,22 +394,29 @@ a {
 
 .modal-card {
   width: 100%;
-  max-width: 420px;
+  max-width: 440px;
   max-height: 85dvh;
   overflow-y: auto;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: 22px;
+  background: var(--hud-bg);
+  border: 3.5px solid var(--hud-border);
+  border-radius: 18px;
   padding: 26px;
-  box-shadow: 0 18px 40px var(--shadow);
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.1),
+    0 8px 0 var(--hud-border),
+    0 20px 44px rgba(0, 0, 0, 0.75);
   display: flex;
   flex-direction: column;
   gap: 18px;
 }
 
 .modal-title {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gold);
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.8);
 }
 
 /* Mobile PWA Install Bar */
@@ -268,4 +431,13 @@ a {
 
 .pwa-install-bar.visible {
   display: block;
+}
+
+#btn-install-pwa {
+  background: var(--orange);
+  color: #fffdf5;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.3),
+    0 4px 0 var(--orange-lip),
+    0 8px 16px rgba(0, 0, 0, 0.5);
 }

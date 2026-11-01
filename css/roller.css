@@ -1,13 +1,14 @@
 .roller-screen {
   width: 100%;
   min-height: 100dvh;
-  max-width: 680px;
+  max-width: 720px;
   margin: 0 auto;
   padding: clamp(20px, 5vw, 40px);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
+  gap: 20px;
 }
 
 .roller-header {
@@ -16,27 +17,50 @@
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+  background: var(--hud-bg);
+  border: 3.5px solid var(--hud-border);
+  border-radius: 16px;
+  padding: 12px 18px;
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.1),
+    0 6px 0 var(--hud-border),
+    0 12px 24px rgba(0, 0, 0, 0.55);
+}
+
+#btn-roller-change-count {
+  background: var(--chips-blue);
+  color: #fffdf5;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.28),
+    0 4px 0 var(--chips-blue-lip);
 }
 
 .result-display {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
+  background: var(--hud-well);
+  border: 2.5px solid var(--hud-border);
+  border-radius: 10px;
+  padding: 6px 14px;
+  box-shadow: inset 0 3px 0 rgba(0, 0, 0, 0.55);
 }
 
 .result-label {
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--muted);
 }
 
 .result-value {
-  font-size: clamp(28px, 6vw, 40px);
+  font-size: clamp(24px, 5vw, 34px);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1;
+  color: var(--gold);
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.85);
 }
 
 .roller-stage {
@@ -53,20 +77,20 @@
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: clamp(16px, 4vw, 28px);
+  gap: clamp(18px, 4vw, 28px);
   width: 100%;
 }
 
 .roller-die {
-  width: clamp(76px, 20vw, 112px);
-  height: clamp(76px, 20vw, 112px);
-  border-radius: clamp(16px, 3.5vw, 22px);
+  width: clamp(76px, 20vw, 110px);
+  height: clamp(76px, 20vw, 110px);
+  border-radius: clamp(14px, 3vw, 18px);
   padding: clamp(12px, 2.8vw, 18px);
   cursor: default;
 }
 
 .roller-die.pop {
-  transform: scale(1.06);
+  transform: translateY(-6px) scale(1.06) rotate(-2deg);
 }
 
 .roller-footer {
@@ -86,34 +110,50 @@
 .btn-step {
   width: 48px;
   height: 48px;
-  border-radius: 50%;
-  border: 1.5px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
-  font-size: 22px;
+  border-radius: 12px;
+  border: 2.5px solid var(--hud-border);
+  background: var(--orange);
+  color: #fffdf5;
+  font-size: 24px;
+  font-weight: 700;
   line-height: 1;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.65);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.3),
+    0 4px 0 var(--orange-lip);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 0.15s ease, transform 0.1s ease;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
 
 .btn-step:hover {
-  border-color: var(--text);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.35),
+    0 5px 0 var(--orange-lip);
 }
 
 .btn-step:active {
-  transform: scale(0.93);
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--orange-lip);
 }
 
 .count-number {
   font-size: 56px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  min-width: 72px;
+  min-width: 84px;
   line-height: 1;
   text-align: center;
+  color: var(--gold);
+  background: var(--hud-well);
+  border: 3px solid var(--hud-border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.85);
+  box-shadow: inset 0 3px 0 rgba(0, 0, 0, 0.55);
 }
 
 .quick-picks {
@@ -124,20 +164,24 @@
 }
 
 .btn-pick {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border-radius: 10px;
-  border: 1.5px solid var(--border);
-  background: transparent;
+  border: 2.5px solid var(--hud-border);
+  background: var(--hud-well);
   color: var(--muted);
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
+  box-shadow: 0 3px 0 var(--hud-border);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.1s ease;
 }
 
 .btn-pick.active {
-  border-color: var(--text);
-  color: var(--text);
-  background: var(--bg);
+  background: var(--chips-blue);
+  color: #fffdf5;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.65);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.3),
+    0 3px 0 var(--chips-blue-lip);
 }

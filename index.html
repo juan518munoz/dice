@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Generala — Dice</title>
+  <title>Dice</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cstyle%3Erect%7Bfill:%23ffffff;stroke:%231c1b18%7Dcircle%7Bfill:%231c1b18%7D.r%7Bfill:%23d9463e%7D@media(prefers-color-scheme:dark)%7Brect%7Bfill:%23171717;stroke:%23f2ede4%7Dcircle%7Bfill:%23f2ede4%7D.r%7Bfill:%23e5534b%7D%7D%3C/style%3E%3Crect x='4' y='4' width='56' height='56' rx='14' stroke-width='5'/%3E%3Ccircle cx='20' cy='20' r='5'/%3E%3Ccircle cx='44' cy='20' r='5'/%3E%3Ccircle class='r' cx='32' cy='32' r='6'/%3E%3Ccircle cx='20' cy='44' r='5'/%3E%3Ccircle cx='44' cy='44' r='5'/%3E%3C/svg%3E" />
   <script src="https://unpkg.com/mqtt@5.10.3/dist/mqtt.min.js"></script>
   <style>
@@ -94,11 +94,6 @@
       cursor: not-allowed;
     }
 
-    .btn-red {
-      background: var(--red);
-      color: #ffffff;
-    }
-
     .btn-ghost {
       background: transparent;
       color: var(--text);
@@ -163,14 +158,6 @@
       align-items: center;
       gap: 8px;
       text-align: center;
-    }
-
-    .brand-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: var(--red);
-      margin-bottom: 2px;
     }
 
     .brand-title {
@@ -829,15 +816,223 @@
     .btn-chat-send:active {
       transform: scale(0.96);
     }
+
+    /* Free Dice Roller Mode */
+    #screen-home {
+      min-height: 100dvh;
+    }
+
+    .roller-screen {
+      width: 100%;
+      min-height: 100dvh;
+      max-width: 680px;
+      margin: 0 auto;
+      padding: clamp(20px, 5vw, 40px);
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .roller-header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .result-display {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .result-label {
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    .result-value {
+      font-size: clamp(28px, 6vw, 40px);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+
+    .roller-stage {
+      flex: 1;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 0;
+    }
+
+    .roller-dice-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: clamp(16px, 4vw, 28px);
+      width: 100%;
+    }
+
+    .roller-die {
+      width: clamp(76px, 20vw, 112px);
+      height: clamp(76px, 20vw, 112px);
+      cursor: default;
+    }
+
+    .roller-die.pop {
+      transform: scale(1.06);
+    }
+
+    .roller-footer {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+
+    .stepper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+    }
+
+    .btn-step {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 22px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.15s ease, transform 0.1s ease;
+    }
+
+    .btn-step:hover {
+      border-color: var(--text);
+    }
+
+    .btn-step:active {
+      transform: scale(0.93);
+    }
+
+    .count-number {
+      font-size: 56px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      min-width: 72px;
+      line-height: 1;
+      text-align: center;
+    }
+
+    .quick-picks {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-pick {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-pick.active {
+      border-color: var(--text);
+      color: var(--text);
+      background: var(--bg);
+    }
   </style>
 </head>
 <body>
 
-  <!-- 1. JOIN / CREATE LOBBY SCREEN -->
-  <section class="screen center-screen active" id="screen-auth">
+  <!-- 0. LANDING PAGE (HOME) -->
+  <section class="screen center-screen active" id="screen-home">
     <div class="card">
       <div class="brand-header">
-        <div class="brand-dot"></div>
+        <h1 class="brand-title">Dice</h1>
+      </div>
+
+      <div class="field-group">
+        <button type="button" class="btn-primary" id="btn-go-roller">
+          Roll the dice
+        </button>
+        <button type="button" class="btn-primary" id="btn-go-generala">
+          Play generala
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 0B. FREE DICE ROLLER SCREEN -->
+  <section class="screen roller-screen" id="screen-roller">
+    <header class="roller-header">
+      <button type="button" class="btn-ghost" id="btn-roller-home">← Home</button>
+      <div class="result-display" aria-live="polite">
+        <span class="result-label">Total</span>
+        <span class="result-value" id="roller-total-val">0</span>
+      </div>
+      <button type="button" class="btn-ghost" id="btn-roller-change-count">
+        Dice: <span id="roller-hud-count">2</span>
+      </button>
+    </header>
+
+    <div class="roller-stage">
+      <div class="roller-dice-grid" id="roller-dice-grid"></div>
+    </div>
+
+    <footer class="roller-footer">
+      <button type="button" class="btn-primary" id="btn-roller-roll" style="max-width: 320px;">Roll</button>
+    </footer>
+  </section>
+
+  <!-- FREE DICE ROLLER: COUNT PICKER MODAL -->
+  <div class="modal-backdrop hidden" id="modal-roller-count" role="dialog" aria-modal="true" aria-labelledby="roller-modal-title">
+    <div class="modal-card" style="align-items: center; text-align: center; max-width: 360px;">
+      <h2 class="modal-title" id="roller-modal-title">How many dice?</h2>
+
+      <div class="stepper">
+        <button type="button" class="btn-step" id="btn-roller-minus" aria-label="Decrease">−</button>
+        <div class="count-number" id="roller-modal-count">2</div>
+        <button type="button" class="btn-step" id="btn-roller-plus" aria-label="Increase">+</button>
+      </div>
+
+      <div class="quick-picks" id="roller-quick-picks">
+        <button type="button" class="btn-pick" data-count="1">1</button>
+        <button type="button" class="btn-pick active" data-count="2">2</button>
+        <button type="button" class="btn-pick" data-count="3">3</button>
+        <button type="button" class="btn-pick" data-count="4">4</button>
+        <button type="button" class="btn-pick" data-count="5">5</button>
+        <button type="button" class="btn-pick" data-count="6">6</button>
+      </div>
+
+      <button type="button" class="btn-primary" id="btn-roller-start">Roll Dice</button>
+    </div>
+  </div>
+
+  <!-- 1. JOIN / CREATE LOBBY SCREEN -->
+  <section class="screen center-screen" id="screen-auth">
+    <div class="card">
+      <div class="brand-header">
         <h1 class="brand-title">Generala</h1>
         <p class="brand-sub">Enter a room key to create or join a live lobby</p>
       </div>
@@ -851,14 +1046,19 @@
           <label for="input-key">Lobby Key</label>
           <input id="input-key" class="key-input" type="text" placeholder="e.g. PREVIA" maxlength="16" required autocomplete="off" />
         </div>
-        <button type="submit" class="btn-primary btn-red" id="btn-enter-lobby">
+        <button type="submit" class="btn-primary" id="btn-enter-lobby">
           Enter Lobby
         </button>
       </form>
 
-      <button type="button" class="btn-ghost" id="btn-open-rules-auth" style="align-self: center;">
-        Rules &amp; Scoring
-      </button>
+      <div style="display: flex; justify-content: center; gap: 10px;">
+        <button type="button" class="btn-ghost" id="btn-auth-home">
+          ← Home
+        </button>
+        <button type="button" class="btn-ghost" id="btn-open-rules-auth">
+          Rules &amp; Scoring
+        </button>
+      </div>
     </div>
   </section>
 
@@ -866,7 +1066,6 @@
   <section class="screen center-screen" id="screen-lobby">
     <div class="card">
       <div class="brand-header">
-        <div class="brand-dot"></div>
         <h2 class="brand-title">Lobby</h2>
         <p class="brand-sub" id="lobby-conn-status">Connected — waiting for players</p>
       </div>
@@ -888,7 +1087,7 @@
       </div>
 
       <div id="host-controls" style="display: none; flex-direction: column; gap: 10px;">
-        <button type="button" class="btn-primary btn-red" id="btn-start-game">
+        <button type="button" class="btn-primary" id="btn-start-game">
           Ready — Start Game
         </button>
         <p class="status-note">You are the host. You can start now (even solo) or wait for friends to enter the same key.</p>
@@ -938,7 +1137,7 @@
         <div class="dice-grid" id="dice-grid"></div>
 
         <div class="dice-footer">
-          <button type="button" class="btn-primary btn-red" id="btn-roll">
+          <button type="button" class="btn-primary" id="btn-roll">
             Roll Dice (3 left)
           </button>
           <p class="helper-text" id="dice-helper">
@@ -1002,11 +1201,10 @@
   <!-- WINNER / GAME OVER MODAL -->
   <div class="modal-backdrop hidden" id="modal-winner" role="dialog" aria-modal="true">
     <div class="modal-card" style="text-align: center;">
-      <div class="brand-dot" style="margin: 0 auto;"></div>
       <h2 class="modal-title" id="winner-title">Game Over</h2>
       <p class="brand-sub" id="winner-subtitle"></p>
       <div class="players-list" id="winner-standings"></div>
-      <button type="button" class="btn-primary btn-red" id="btn-play-again" style="display: none;">
+      <button type="button" class="btn-primary" id="btn-play-again" style="display: none;">
         Play Again
       </button>
       <button type="button" class="btn-ghost" id="btn-close-winner" style="align-self: center;">
@@ -1439,6 +1637,8 @@
     /* =========================================================================
        3. UI RENDERING & INTERACTION
        ========================================================================= */
+    const screenHome = document.getElementById('screen-home');
+    const screenRoller = document.getElementById('screen-roller');
     const screenAuth = document.getElementById('screen-auth');
     const screenLobby = document.getElementById('screen-lobby');
     const screenGame = document.getElementById('screen-game');
@@ -1483,19 +1683,21 @@
     const chatInput = document.getElementById('chat-input');
     let lastRenderedChatCount = -1;
 
+    function showScreen(target) {
+      [screenHome, screenRoller, screenAuth, screenLobby, screenGame].forEach(s => {
+        s.classList.toggle('active', s === target);
+      });
+      const inRoom = target === screenLobby || target === screenGame;
+      chatWrapper.classList.toggle('active', inRoom);
+      chatWrapper.classList.toggle('lobby-mode', target === screenLobby);
+    }
+
     // Pre-fill saved name or URL ?room= parameter
     inputName.value = myName;
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('room')) {
       inputKey.value = urlParams.get('room').toUpperCase();
-    }
-
-    function showScreen(target) {
-      [screenAuth, screenLobby, screenGame].forEach(s => {
-        s.classList.toggle('active', s === target);
-      });
-      chatWrapper.classList.toggle('active', target !== screenAuth);
-      chatWrapper.classList.toggle('lobby-mode', target === screenLobby);
+      showScreen(screenAuth);
     }
 
     function updateConnectionUI(connected) {
@@ -1956,16 +2158,157 @@
     document.getElementById('btn-close-rules').addEventListener('click', () => modalRules.classList.add('hidden'));
     document.getElementById('btn-close-winner').addEventListener('click', () => modalWinner.classList.add('hidden'));
 
-    // Spacebar to roll on your turn
+    /* =========================================================================
+       5. LANDING PAGE & FREE DICE ROLLER MODE
+       ========================================================================= */
+    const btnGoRoller = document.getElementById('btn-go-roller');
+    const btnGoGenerala = document.getElementById('btn-go-generala');
+    const btnAuthHome = document.getElementById('btn-auth-home');
+    const btnRollerHome = document.getElementById('btn-roller-home');
+
+    const rollerDiceGrid = document.getElementById('roller-dice-grid');
+    const rollerTotalVal = document.getElementById('roller-total-val');
+    const rollerHudCount = document.getElementById('roller-hud-count');
+    const btnRollerChangeCount = document.getElementById('btn-roller-change-count');
+    const btnRollerRoll = document.getElementById('btn-roller-roll');
+
+    const modalRollerCount = document.getElementById('modal-roller-count');
+    const rollerModalCount = document.getElementById('roller-modal-count');
+    const btnRollerMinus = document.getElementById('btn-roller-minus');
+    const btnRollerPlus = document.getElementById('btn-roller-plus');
+    const rollerQuickPicks = document.getElementById('roller-quick-picks');
+    const btnRollerStart = document.getElementById('btn-roller-start');
+
+    let freeDiceCount = 2;
+    let isFreeRolling = false;
+
+    function setFreeDiceCount(n) {
+      freeDiceCount = Math.max(1, Math.min(12, n));
+      rollerModalCount.textContent = freeDiceCount;
+      rollerHudCount.textContent = freeDiceCount;
+      rollerQuickPicks.querySelectorAll('.btn-pick').forEach(btn => {
+        btn.classList.toggle('active', Number(btn.dataset.count) === freeDiceCount);
+      });
+    }
+
+    function buildFreeDice() {
+      rollerDiceGrid.innerHTML = '';
+      for (let i = 0; i < freeDiceCount; i++) {
+        const die = document.createElement('div');
+        die.className = 'die roller-die';
+        for (let p = 0; p < 9; p++) {
+          const pip = document.createElement('div');
+          pip.className = 'pip';
+          die.appendChild(pip);
+        }
+        rollerDiceGrid.appendChild(die);
+        renderDiePips(die, 1);
+      }
+    }
+
+    function rollFreeDice() {
+      if (isFreeRolling) return;
+      isFreeRolling = true;
+
+      const diceEls = Array.from(rollerDiceGrid.children);
+      diceEls.forEach(d => {
+        d.classList.remove('pop');
+        d.classList.add('rolling');
+      });
+
+      const interval = setInterval(() => {
+        diceEls.forEach(die => {
+          renderDiePips(die, Math.floor(Math.random() * 6) + 1);
+        });
+      }, 60);
+
+      setTimeout(() => {
+        clearInterval(interval);
+        let sum = 0;
+        diceEls.forEach(die => {
+          const val = Math.floor(Math.random() * 6) + 1;
+          sum += val;
+          die.classList.remove('rolling');
+          die.classList.add('pop');
+          renderDiePips(die, val);
+          setTimeout(() => die.classList.remove('pop'), 180);
+        });
+        rollerTotalVal.textContent = sum;
+        isFreeRolling = false;
+      }, 320);
+    }
+
+    btnGoRoller.addEventListener('click', () => {
+      showScreen(screenRoller);
+      buildFreeDice();
+      modalRollerCount.classList.remove('hidden');
+    });
+
+    btnGoGenerala.addEventListener('click', () => {
+      showScreen(screenAuth);
+    });
+
+    btnAuthHome.addEventListener('click', () => {
+      window.history.replaceState({}, '', window.location.pathname);
+      showScreen(screenHome);
+    });
+
+    btnRollerHome.addEventListener('click', () => {
+      modalRollerCount.classList.add('hidden');
+      showScreen(screenHome);
+    });
+
+    btnRollerMinus.addEventListener('click', () => setFreeDiceCount(freeDiceCount - 1));
+    btnRollerPlus.addEventListener('click', () => setFreeDiceCount(freeDiceCount + 1));
+
+    rollerQuickPicks.querySelectorAll('.btn-pick').forEach(btn => {
+      btn.addEventListener('click', () => setFreeDiceCount(Number(btn.dataset.count)));
+    });
+
+    btnRollerStart.addEventListener('click', () => {
+      modalRollerCount.classList.add('hidden');
+      buildFreeDice();
+      rollFreeDice();
+    });
+
+    btnRollerChangeCount.addEventListener('click', () => {
+      if (isFreeRolling) return;
+      modalRollerCount.classList.remove('hidden');
+    });
+
+    btnRollerRoll.addEventListener('click', rollFreeDice);
+
+    // Keyboard shortcuts for both Free Roller and Generala
     window.addEventListener('keydown', (e) => {
+      if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+
+      if (screenRoller.classList.contains('active')) {
+        const modalOpen = !modalRollerCount.classList.contains('hidden');
+        if (modalOpen) {
+          if (e.key === 'ArrowLeft' || e.key === '-') setFreeDiceCount(freeDiceCount - 1);
+          else if (e.key === 'ArrowRight' || e.key === '+') setFreeDiceCount(freeDiceCount + 1);
+          else if (e.key >= '1' && e.key <= '9') setFreeDiceCount(Number(e.key));
+          else if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            btnRollerStart.click();
+          }
+          return;
+        }
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          rollFreeDice();
+        }
+        return;
+      }
+
       if (e.key === ' ' && screenGame.classList.contains('active') && modalRules.classList.contains('hidden')) {
-        if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
         e.preventDefault();
         onRollClick();
       }
     });
 
     initDiceDOM();
+    buildFreeDice();
   </script>
 </body>
 </html>

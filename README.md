@@ -1,9 +1,6 @@
 # DICE
 
-A minimal, responsive **Generala** dice game with live multiplayer for desktop and mobile.
+A minimal, responsive web app for desktop and mobile with two modes:
 
-## Features
-
-- **Live Multiplayer Lobbies**: Enter any room key to create or join a lobby; the host starts the game when ready (supports solo or multiplayer play).
-- **Full Generala Rules**: 5 dice, up to 3 throws per turn with dice hold, full 10-category scorecard (`1`–`6`, `Escalera`, `Full`, `Póker`, `Generala`) including *Servida* bonuses.
-- **Minimal Theme**: Adapts automatically to system light (beige) and dark (black) themes with crimson accents.
+- **Roll the dice**: Pick how many dice to roll (`1`–`12`) and view the rolled dice and total sum.
+- **Play generala**: Live multiplayer **Generala** with key-based lobbies, solo or multiplayer support, full scorecard (*servida* bonuses included), and a live room chat window.

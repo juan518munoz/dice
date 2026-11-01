@@ -1,7 +1,16 @@
 (function () {
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.protocol === 'http:')) {
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    });
+
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').catch(() => {});
+      navigator.serviceWorker.register('./sw.js').then((reg) => {
+        try { reg.update(); } catch (_) {}
+      }).catch(() => {});
     });
   }
 

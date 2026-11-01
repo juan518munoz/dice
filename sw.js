@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dice-pwa-v2';
+const CACHE_NAME = 'dice-pwa-v3';
 const ASSETS = [
   './',
   './index.html',

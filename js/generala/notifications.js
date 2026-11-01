@@ -86,9 +86,8 @@
 
   function getStatusLabel() {
     if (!enabled) return 'Alerts: Off';
-    if (!isSupported()) return 'Alerts: Audio Only';
-    if (Notification.permission === 'default') return 'Enable OS Alerts';
-    if (Notification.permission === 'denied') return 'OS Alerts Blocked';
+    if (!isSupported()) return 'Alerts: On';
+    if (Notification.permission === 'default') return 'Enable Alerts';
     return 'Alerts: On';
   }
 
@@ -112,7 +111,7 @@
         localStorage.setItem('generala_notifications', 'on');
         sendSystemNotification(
           'Generala Alerts Enabled',
-          "You'll receive macOS/system banners when it's your turn or someone chats.",
+          "You'll receive notifications when it's your turn or someone chats.",
           'generala-enabled'
         );
       }
@@ -124,32 +123,38 @@
 
   async function toggleEnabled() {
     unlockAudio();
-    if (isSupported() && Notification.permission === 'default') {
-      const res = await requestPermission();
-      if (res === 'granted') {
-        enabled = true;
-        localStorage.setItem('generala_notifications', 'on');
+
+    // If currently off, or if browser permission hasn't been asked yet, turn ON & request permission
+    if (!enabled || (isSupported() && Notification.permission === 'default')) {
+      enabled = true;
+      localStorage.setItem('generala_notifications', 'on');
+      playAlertTone();
+
+      if (isSupported() && Notification.permission === 'default') {
+        const res = await requestPermission();
+        if (res === 'granted') {
+          showToast('Alerts Enabled', 'System notifications, sound, and in-app alerts are active.');
+        } else {
+          showToast('In-App Alerts Enabled', 'Allow browser notifications in site settings for background banners.');
+        }
+      } else if (isSupported() && Notification.permission === 'granted') {
+        showToast('Alerts On', 'Notifications are active for this lobby.');
+        sendSystemNotification(
+          'Generala Alerts On',
+          'System notifications are active for this lobby.',
+          'generala-toggle'
+        );
+      } else {
+        showToast('In-App Alerts On', 'Sound & banner alerts enabled (allow site notifications in browser settings for OS banners).');
       }
       return getStatusLabel();
     }
-    if (isSupported() && Notification.permission === 'denied') {
-      showToast(
-        'Browser Notifications Blocked',
-        'Allow notifications for this site in your browser address bar & macOS System Settings > Notifications.'
-      );
-      return getStatusLabel();
-    }
-    enabled = !enabled;
-    localStorage.setItem('generala_notifications', enabled ? 'on' : 'off');
-    if (enabled) {
-      sendSystemNotification(
-        'Generala Alerts On',
-        "System notifications are active for this lobby.",
-        'generala-toggle'
-      );
-    } else {
-      clearTitleFlash();
-    }
+
+    // Otherwise toggle OFF
+    enabled = false;
+    localStorage.setItem('generala_notifications', 'off');
+    clearTitleFlash();
+    showToast('Alerts Off', 'Notifications muted for this device.');
     return getStatusLabel();
   }
 
@@ -186,7 +191,8 @@
     }
 
     if (!shownNatively && 'serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistration().then((reg) => {
+      const swPromise = navigator.serviceWorker.ready || navigator.serviceWorker.getRegistration();
+      Promise.resolve(swPromise).then((reg) => {
         if (reg && typeof reg.showNotification === 'function') {
           reg.showNotification(title, options).catch(() => {});
         }

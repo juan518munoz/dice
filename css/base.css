@@ -1,4 +1,18 @@
-@import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;600;700&family=VT323&display=swap');
+@font-face {
+  font-family: 'm6x11';
+  src: url('../assets/fonts/m6x11plus.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'm6x11';
+  src: url('../assets/fonts/m6x11plus.ttf') format('truetype');
+  font-weight: 500 800;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
   /* Balatro Palette */
@@ -73,9 +87,11 @@ html, body {
     );
   background-attachment: fixed;
   color: var(--text);
-  font-family: 'Pixelify Sans', 'Courier New', monospace;
-  letter-spacing: 0.02em;
-  -webkit-font-smoothing: antialiased;
+  font-family: 'm6x11', monospace;
+  font-synthesis: none;
+  letter-spacing: 0.03em;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: grayscale;
   touch-action: manipulation;
   position: relative;
   overflow-x: hidden;

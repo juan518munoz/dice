@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dice-pwa-v5';
+const CACHE_NAME = 'dice-pwa-v6';
 const ASSETS = [
   './',
   './index.html',
@@ -10,6 +10,7 @@ const ASSETS = [
   './assets/apple-touch-icon.png',
   './assets/icon-192.png',
   './assets/icon-512.png',
+  './assets/fonts/m6x11plus.ttf',
   './css/base.css',
   './css/roller.css',
   './css/generala.css',

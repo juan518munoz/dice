@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dice-pwa-v1';
+const CACHE_NAME = 'dice-pwa-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -16,6 +16,7 @@ const ASSETS = [
   './js/dice-ui.js',
   './js/roller.js',
   './js/generala/rules.js',
+  './js/generala/notifications.js',
   './js/generala/network.js',
   './js/generala/app.js'
 ];
@@ -51,5 +52,21 @@ self.addEventListener('fetch', (event) => {
         return response;
       })
       .catch(() => caches.match(event.request))
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ('focus' in client) {
+          return client.focus();
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow('./generala.html');
+      }
+    })
   );
 });

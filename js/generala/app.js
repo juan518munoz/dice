@@ -1,6 +1,7 @@
 (function () {
   const { createDieElement, renderDiePips } = window.DiceUI;
   const { CATEGORIES, scoreCategory, detectBestCallout, getPlayerTotal } = window.GeneralaRules;
+  const Notify = window.GeneralaNotify;
   const Net = window.GeneralaNet;
 
   const screenAuth = document.getElementById('screen-auth');
@@ -45,7 +46,24 @@
   const chatMessagesEl = document.getElementById('chat-messages');
   const chatForm = document.getElementById('chat-form');
   const chatInput = document.getElementById('chat-input');
+  const btnNotifyLobby = document.getElementById('btn-notify-lobby');
+  const btnNotifyGame = document.getElementById('btn-notify-game');
   let lastRenderedChatCount = -1;
+  let chatHistorySeeded = false;
+  const notifiedChatIds = new Set();
+  let lastNotifiedTurnKey = '';
+
+  function updateNotifyButtons() {
+    if (!Notify) return;
+    const label = Notify.getStatusLabel ? Notify.getStatusLabel() : (Notify.isActive() ? 'Alerts: On' : 'Alerts: Off');
+    const needsPrompt = Notify.needsPermissionPrompt && Notify.needsPermissionPrompt();
+    [btnNotifyLobby, btnNotifyGame].forEach(btn => {
+      if (!btn) return;
+      btn.textContent = label;
+      btn.classList.toggle('needs-permission', Boolean(needsPrompt));
+    });
+  }
+  updateNotifyButtons();
 
   inputName.value = Net.myName;
   const urlParams = new URLSearchParams(window.location.search);
@@ -129,6 +147,20 @@
 
   function renderChat() {
     const msgs = Net.roomState?.messages || [];
+    if (!chatHistorySeeded) {
+      msgs.forEach(m => notifiedChatIds.add(m.id));
+      chatHistorySeeded = true;
+    } else {
+      msgs.forEach(m => {
+        if (!notifiedChatIds.has(m.id)) {
+          notifiedChatIds.add(m.id);
+          if (m.senderId !== Net.clientId && Notify) {
+            Notify.notify(m.senderName, m.text, 'chat-' + m.id);
+          }
+        }
+      });
+    }
+
     if (msgs.length === lastRenderedChatCount) return;
     lastRenderedChatCount = msgs.length;
 
@@ -193,6 +225,18 @@
 
     const activePlayer = state.players[state.turnIndex] || state.players[0];
     const isMyTurn = activePlayer && activePlayer.id === Net.clientId && state.status === 'playing';
+
+    const completedTurns = state.players.reduce(
+      (sum, p) => sum + Object.keys(p.scores || {}).length,
+      0
+    );
+    const turnKey = `${state.status}:${completedTurns}:${activePlayer?.id || ''}`;
+    if (turnKey !== lastNotifiedTurnKey) {
+      lastNotifiedTurnKey = turnKey;
+      if (isMyTurn && state.rollsUsed === 0 && (state.players.length > 1 || document.hidden) && Notify) {
+        Notify.notify('Your Turn — Generala', "It's your turn to roll the dice!", 'turn-' + state.roomKey);
+      }
+    }
 
     if (state.status === 'finished') {
       turnIndicator.textContent = 'Game Finished';
@@ -390,6 +434,9 @@
   function leaveToAuthScreen() {
     Net.leaveRoom();
     lastRenderedChatCount = -1;
+    chatHistorySeeded = false;
+    notifiedChatIds.clear();
+    lastNotifiedTurnKey = '';
     chatMessagesEl.innerHTML = '<div class="chat-empty">No messages yet — say hi!</div>';
     window.history.replaceState({}, '', window.location.pathname);
     showScreen(screenAuth);
@@ -416,9 +463,29 @@
     lobbyKeyDisplay.textContent = key;
     showScreen(screenLobby);
     Net.connectRoom(key, name);
+
+    if (Notify) {
+      Notify.requestPermission().then(updateNotifyButtons);
+    }
   });
 
-  btnStartGame.addEventListener('click', () => Net.startOrResetMatch());
+  if (btnNotifyLobby) {
+    btnNotifyLobby.addEventListener('click', () => {
+      if (Notify) Notify.toggleEnabled().then(updateNotifyButtons);
+    });
+  }
+  if (btnNotifyGame) {
+    btnNotifyGame.addEventListener('click', () => {
+      if (Notify) Notify.toggleEnabled().then(updateNotifyButtons);
+    });
+  }
+
+  btnStartGame.addEventListener('click', () => {
+    if (Notify && Notify.getPermission() === 'default') {
+      Notify.requestPermission().then(updateNotifyButtons);
+    }
+    Net.startOrResetMatch();
+  });
   btnPlayAgain.addEventListener('click', () => {
     modalWinner.classList.add('hidden');
     Net.startOrResetMatch();
@@ -439,6 +506,9 @@
     const text = chatInput.value.trim();
     if (!text) return;
     chatInput.value = '';
+    if (Notify && Notify.getPermission() === 'default') {
+      Notify.requestPermission().then(updateNotifyButtons);
+    }
     Net.sendChat(text);
   });
 

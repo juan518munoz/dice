@@ -6,14 +6,32 @@
     'wss://broker.hivemq.com:8884/mqtt'
   ];
 
-  const clientId = (() => {
-    let id = sessionStorage.getItem('generala_client_id');
+  let clientId = (() => {
+    const navEntry = performance.getEntriesByType?.('navigation')?.[0];
+    const isReload = navEntry && navEntry.type === 'reload';
+    let id = isReload ? sessionStorage.getItem('generala_client_id') : null;
     if (!id) {
       id = 'p_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
       sessionStorage.setItem('generala_client_id', id);
     }
     return id;
   })();
+
+  if ('BroadcastChannel' in window) {
+    try {
+      const idGuard = new BroadcastChannel('jm_dice_id_guard');
+      const instanceToken = Math.random().toString(36).slice(2);
+      idGuard.onmessage = (ev) => {
+        const data = ev.data;
+        if (!data || data.token === instanceToken) return;
+        if (data.type === 'CLAIM' && data.clientId === clientId) {
+          clientId = 'p_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+          sessionStorage.setItem('generala_client_id', clientId);
+        }
+      };
+      idGuard.postMessage({ type: 'CLAIM', clientId, token: instanceToken });
+    } catch (_) {}
+  }
 
   let myName = localStorage.getItem('generala_name') || '';
   let currentRoomKey = '';
@@ -23,6 +41,8 @@
   let bcChannel = null;
   let hostDiscoveryTimer = null;
   let heartbeatTimer = null;
+  let workerTicker = null;
+  let lockAbortController = null;
   let isRollingAnim = false;
   const seenMsgIds = new Set();
 
@@ -39,6 +59,7 @@
     return {
       roomKey: key,
       hostId: hostId,
+      version: 1,
       status: 'lobby', // 'lobby' | 'playing' | 'finished'
       turnIndex: 0,
       rollsUsed: 0,
@@ -55,6 +76,54 @@
 
   function getTopic(key) {
     return `jm-dice-generala-v1/room/${encodeURIComponent(key)}`;
+  }
+
+  function acquireWakeLock() {
+    releaseWakeLock();
+    if (navigator.locks && typeof navigator.locks.request === 'function') {
+      try {
+        lockAbortController = new AbortController();
+        navigator.locks.request(
+          'generala_room_' + clientId,
+          { signal: lockAbortController.signal },
+          () => new Promise(() => {})
+        ).catch(() => {});
+      } catch (_) {}
+    }
+  }
+
+  function releaseWakeLock() {
+    if (lockAbortController) {
+      try { lockAbortController.abort(); } catch (_) {}
+      lockAbortController = null;
+    }
+  }
+
+  function startBackgroundTicker(fn, intervalMs) {
+    stopBackgroundTicker();
+    try {
+      const blob = new Blob(
+        [`setInterval(() => postMessage('tick'), ${intervalMs});`],
+        { type: 'application/javascript' }
+      );
+      const url = URL.createObjectURL(blob);
+      workerTicker = new Worker(url);
+      workerTicker.onmessage = () => fn();
+      URL.revokeObjectURL(url);
+    } catch (_) {
+      heartbeatTimer = setInterval(fn, intervalMs);
+    }
+  }
+
+  function stopBackgroundTicker() {
+    if (workerTicker) {
+      try { workerTicker.terminate(); } catch (_) {}
+      workerTicker = null;
+    }
+    if (heartbeatTimer) {
+      clearInterval(heartbeatTimer);
+      heartbeatTimer = null;
+    }
   }
 
   function sendPacket(payload) {
@@ -88,6 +157,8 @@
     isHost = false;
     roomState = null;
 
+    acquireWakeLock();
+
     const topic = getTopic(key);
 
     if ('BroadcastChannel' in window) {
@@ -99,14 +170,15 @@
       BROKERS.forEach((url) => {
         try {
           const client = window.mqtt.connect(url, {
-            keepalive: 30,
+            keepalive: 120,
             connectTimeout: 6000,
-            reconnectPeriod: 2000
+            reconnectPeriod: 1500
           });
           client.on('connect', () => {
             callbacks.onConnectionChange(true);
             client.subscribe(topic, { qos: 0 }, () => {
               sendPacket({ type: 'HELLO', name: playerName, joinedAt });
+              sendPacket({ type: 'SYNC_REQ' });
             });
           });
           client.on('message', (t, msg) => {
@@ -118,6 +190,7 @@
     }
 
     sendPacket({ type: 'HELLO', name: playerName, joinedAt });
+    sendPacket({ type: 'SYNC_REQ' });
 
     hostDiscoveryTimer = setTimeout(() => {
       if (!roomState) {
@@ -125,13 +198,14 @@
       }
     }, 950);
 
-    heartbeatTimer = setInterval(() => {
-      if (isHost && roomState) {
+    startBackgroundTicker(() => {
+      if (!currentRoomKey) return;
+      if (roomState && isHost) {
         sendPacket({ type: 'ROOM_STATE', state: roomState });
-      } else if (currentRoomKey) {
+      } else if (!roomState) {
         sendPacket({ type: 'HELLO', name: myName, joinedAt });
       }
-    }, 3500);
+    }, 3000);
   }
 
   function becomeHost(key, playerName) {
@@ -143,9 +217,9 @@
 
   function disconnectRoom() {
     if (hostDiscoveryTimer) clearTimeout(hostDiscoveryTimer);
-    if (heartbeatTimer) clearInterval(heartbeatTimer);
     hostDiscoveryTimer = null;
-    heartbeatTimer = null;
+    stopBackgroundTicker();
+    releaseWakeLock();
 
     if (bcChannel) {
       try { bcChannel.close(); } catch (_) {}
@@ -160,6 +234,13 @@
     isHost = false;
   }
 
+  function mergeMessages(existingMsgs, incomingMsgs) {
+    const map = new Map();
+    (existingMsgs || []).forEach(m => { if (m && m.id) map.set(m.id, m); });
+    (incomingMsgs || []).forEach(m => { if (m && m.id) map.set(m.id, m); });
+    return Array.from(map.values()).slice(-60);
+  }
+
   function handleRawMessage(raw) {
     let msg;
     try {
@@ -171,28 +252,68 @@
     if (msg.roomKey !== currentRoomKey) return;
     seenMsgIds.add(msg.msgId);
 
+    if (msg.type === 'SYNC_REQ') {
+      if (roomState) {
+        sendPacket({ type: 'ROOM_STATE', state: roomState });
+      }
+      return;
+    }
+
     if (msg.type === 'ROOM_STATE' && msg.state) {
       if (hostDiscoveryTimer) {
         clearTimeout(hostDiscoveryTimer);
         hostDiscoveryTimer = null;
       }
-      if (isHost && msg.state.hostId !== clientId) {
-        const theirPlayers = msg.state.players?.length || 0;
-        const ourPlayers = roomState?.players?.length || 0;
-        if (theirPlayers > ourPlayers || (theirPlayers === ourPlayers && msg.state.hostId < clientId)) {
-          isHost = false;
-        } else {
-          mergePlayerIntoHost(msg.state.hostId, msg.state.players?.[0]?.name || 'Player');
-          return;
-        }
-      }
-      if (!isHost) {
-        roomState = msg.state;
+
+      const incoming = msg.state;
+      const incVer = incoming.version || 1;
+      const curVer = roomState?.version || 0;
+
+      if (!roomState) {
+        roomState = incoming;
+        isHost = roomState.hostId === clientId;
         const inList = roomState.players.some(p => p.id === clientId);
         if (!inList && roomState.status === 'lobby') {
           sendPacket({ type: 'HELLO', name: myName, joinedAt });
         }
         callbacks.onStateChange();
+        return;
+      }
+
+      // Resolve initial host tie-break if two clients created a room simultaneously
+      if (isHost && incoming.hostId !== clientId && incVer <= 2 && curVer <= 2 && roomState.status === 'lobby') {
+        const theirPlayers = incoming.players?.length || 0;
+        const ourPlayers = roomState.players?.length || 0;
+        if (theirPlayers > ourPlayers || (theirPlayers === ourPlayers && incoming.hostId < clientId)) {
+          isHost = false;
+          roomState = incoming;
+          sendPacket({ type: 'HELLO', name: myName, joinedAt });
+          callbacks.onStateChange();
+          return;
+        } else {
+          mergePlayerIntoRoom(incoming.hostId, incoming.players?.[0]?.name || 'Player');
+          return;
+        }
+      }
+
+      // Accept any newer state version (or same version with newer messages/players)
+      const mergedMessages = mergeMessages(roomState.messages, incoming.messages);
+      const hasNewMessages = mergedMessages.length > (roomState.messages?.length || 0);
+
+      if (incVer > curVer || (incVer === curVer && (incoming.updatedAt || 0) > (roomState.updatedAt || 0))) {
+        roomState = {
+          ...incoming,
+          messages: mergedMessages
+        };
+        isHost = roomState.hostId === clientId;
+        const inList = roomState.players.some(p => p.id === clientId);
+        if (!inList && roomState.status === 'lobby') {
+          sendPacket({ type: 'HELLO', name: myName, joinedAt });
+        }
+        callbacks.onStateChange();
+      } else if (hasNewMessages) {
+        roomState.messages = mergedMessages;
+        callbacks.onChatUpdate();
       }
       return;
     }
@@ -204,24 +325,21 @@
 
     if (msg.type === 'ACTION_CHAT') {
       appendChatMessage(msg.chatMsg);
-      if (isHost) {
-        broadcastHostState();
-      }
       return;
     }
 
-    if (!isHost || !roomState) return;
+    if (!roomState) return;
 
     if (msg.type === 'HELLO') {
-      mergePlayerIntoHost(msg.senderId, msg.name || 'Player');
+      mergePlayerIntoRoom(msg.senderId, msg.name || 'Player');
     } else if (msg.type === 'ACTION_TOGGLE_HOLD') {
-      handleHostToggleHold(msg.senderId, msg.dieIndex);
+      if (isHost) executeToggleHold(msg.senderId, msg.dieIndex);
     } else if (msg.type === 'ACTION_ROLL') {
-      handleHostRoll(msg.senderId);
+      if (isHost) executeRoll(msg.senderId);
     } else if (msg.type === 'ACTION_SCORE') {
-      handleHostScore(msg.senderId, msg.catId);
+      if (isHost) executeScore(msg.senderId, msg.catId);
     } else if (msg.type === 'ACTION_LEAVE') {
-      handleHostPlayerLeave(msg.senderId);
+      handlePlayerLeave(msg.senderId);
     }
   }
 
@@ -236,39 +354,55 @@
     callbacks.onChatUpdate();
   }
 
-  function mergePlayerIntoHost(playerId, playerName) {
-    if (!isHost || !roomState) return;
+  function mergePlayerIntoRoom(playerId, playerName) {
+    if (!roomState) return;
     const existing = roomState.players.find(p => p.id === playerId);
+    let changed = false;
     if (existing) {
-      existing.name = playerName || existing.name;
+      if (playerName && existing.name !== playerName) {
+        existing.name = playerName;
+        changed = true;
+      }
     } else if (roomState.status === 'lobby') {
       roomState.players.push({
         id: playerId,
         name: playerName || `Player ${roomState.players.length + 1}`,
         scores: {}
       });
+      changed = true;
     }
-    broadcastHostState();
+    if (changed || isHost) {
+      broadcastRoomState(changed);
+    }
   }
 
-  function handleHostPlayerLeave(playerId) {
-    if (!isHost || !roomState) return;
+  function handlePlayerLeave(playerId) {
+    if (!roomState) return;
     if (roomState.status === 'lobby') {
+      const before = roomState.players.length;
       roomState.players = roomState.players.filter(p => p.id !== playerId);
-      broadcastHostState();
+      if (roomState.players.length !== before) {
+        if (roomState.hostId === playerId && roomState.players[0]) {
+          roomState.hostId = roomState.players[0].id;
+          isHost = roomState.hostId === clientId;
+        }
+        broadcastRoomState(true);
+      }
     }
   }
 
-  function handleHostToggleHold(playerId, dieIndex) {
+  function executeToggleHold(playerId, dieIndex) {
+    if (!roomState) return;
     const activePlayer = roomState.players[roomState.turnIndex];
     if (!activePlayer || activePlayer.id !== playerId) return;
     if (roomState.rollsUsed === 0 || roomState.rollsUsed >= 3) return;
     if (dieIndex < 0 || dieIndex > 4) return;
     roomState.held[dieIndex] = !roomState.held[dieIndex];
-    broadcastHostState();
+    broadcastRoomState(true);
   }
 
-  function handleHostRoll(playerId) {
+  function executeRoll(playerId) {
+    if (!roomState) return;
     const activePlayer = roomState.players[roomState.turnIndex];
     if (!activePlayer || activePlayer.id !== playerId) return;
     if (roomState.rollsUsed >= 3 || isRollingAnim) return;
@@ -284,16 +418,18 @@
     callbacks.onRollAnim(roomState.held);
 
     setTimeout(() => {
+      if (!roomState) return;
       roomState.rollsUsed += 1;
       roomState.isServidaThrow = wasFirstThrow && allFiveRolled;
       roomState.dice = roomState.dice.map((val, idx) =>
         roomState.held[idx] ? val : Math.floor(Math.random() * 6) + 1
       );
-      broadcastHostState();
+      broadcastRoomState(true);
     }, 320);
   }
 
-  function handleHostScore(playerId, catId) {
+  function executeScore(playerId, catId) {
+    if (!roomState) return;
     const activePlayer = roomState.players[roomState.turnIndex];
     if (!activePlayer || activePlayer.id !== playerId) return;
     if (roomState.rollsUsed === 0) return;
@@ -315,11 +451,14 @@
       roomState.held = [false, false, false, false, false];
     }
 
-    broadcastHostState();
+    broadcastRoomState(true);
   }
 
-  function broadcastHostState() {
-    if (!isHost || !roomState) return;
+  function broadcastRoomState(incrementVersion) {
+    if (!roomState) return;
+    if (incrementVersion) {
+      roomState.version = (roomState.version || 1) + 1;
+    }
     roomState.updatedAt = Date.now();
     callbacks.onStateChange();
     sendPacket({ type: 'ROOM_STATE', state: roomState });
@@ -333,22 +472,20 @@
     roomState.isServidaThrow = false;
     roomState.held = [false, false, false, false, false];
     roomState.players.forEach(p => { p.scores = {}; });
-    broadcastHostState();
+    broadcastRoomState(true);
   }
 
+  // Active player executes turn actions directly in their foreground tab and broadcasts ROOM_STATE
   function sendToggleHold(dieIndex) {
-    if (isHost) handleHostToggleHold(clientId, dieIndex);
-    else sendPacket({ type: 'ACTION_TOGGLE_HOLD', dieIndex });
+    executeToggleHold(clientId, dieIndex);
   }
 
   function sendRoll() {
-    if (isHost) handleHostRoll(clientId);
-    else sendPacket({ type: 'ACTION_ROLL' });
+    executeRoll(clientId);
   }
 
   function sendScore(catId) {
-    if (isHost) handleHostScore(clientId, catId);
-    else sendPacket({ type: 'ACTION_SCORE', catId });
+    executeScore(clientId, catId);
   }
 
   function sendChat(text) {
@@ -360,14 +497,32 @@
       text
     };
     appendChatMessage(chatMsg);
+    roomState.version = (roomState.version || 1) + 1;
+    roomState.updatedAt = Date.now();
     sendPacket({ type: 'ACTION_CHAT', chatMsg });
-    if (isHost) broadcastHostState();
+    sendPacket({ type: 'ROOM_STATE', state: roomState });
   }
 
   function leaveRoom() {
     sendPacket({ type: 'ACTION_LEAVE' });
     disconnectRoom();
   }
+
+  // Re-sync immediately when tab visibility or window focus changes
+  function onWakeOrFocus() {
+    if (!currentRoomKey) return;
+    mqttClients.forEach(c => {
+      if (c && !c.connected && typeof c.reconnect === 'function') {
+        try { c.reconnect(); } catch (_) {}
+      }
+    });
+    sendPacket({ type: 'SYNC_REQ' });
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) onWakeOrFocus();
+  });
+  window.addEventListener('focus', onWakeOrFocus);
 
   window.GeneralaNet = {
     get clientId() { return clientId; },

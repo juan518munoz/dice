@@ -18,10 +18,17 @@
   <script src="https://unpkg.com/mqtt@5.10.3/dist/mqtt.min.js"></script>
   <script defer src="js/dice-ui.js"></script>
   <script defer src="js/generala/rules.js"></script>
+  <script defer src="js/generala/notifications.js"></script>
   <script defer src="js/generala/network.js"></script>
   <script defer src="js/generala/app.js"></script>
 </head>
 <body>
+
+  <!-- TOP IN-APP NOTIFICATION TOAST -->
+  <div class="notify-toast" id="notify-toast" role="status" aria-live="polite">
+    <span class="notify-toast-title" id="notify-toast-title"></span>
+    <span class="notify-toast-body" id="notify-toast-body"></span>
+  </div>
 
   <!-- 1. JOIN / CREATE LOBBY SCREEN -->
   <section class="screen center-screen active" id="screen-auth">
@@ -89,9 +96,14 @@
         <p class="status-note">Waiting for the host to start the game…</p>
       </div>
 
-      <button type="button" class="btn-ghost" id="btn-leave-lobby" style="align-self: center;">
-        Leave Lobby
-      </button>
+      <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+        <button type="button" class="btn-ghost" id="btn-notify-lobby">
+          Alerts: Off
+        </button>
+        <button type="button" class="btn-ghost" id="btn-leave-lobby">
+          Leave Lobby
+        </button>
+      </div>
     </div>
   </section>
 
@@ -102,6 +114,7 @@
         <span class="conn-dot" id="game-conn-dot" title="Live connection status"></span>
         <span class="room-pill" id="game-room-pill">KEY: ----</span>
         <button type="button" class="btn-ghost" id="btn-open-rules-game">Rules</button>
+        <button type="button" class="btn-ghost" id="btn-notify-game">Alerts: Off</button>
       </div>
 
       <div class="turn-banner">

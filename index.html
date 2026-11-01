@@ -4,8 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Dice</title>
+  <meta name="theme-color" content="#f5f0e6" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Dice" />
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="css/base.css" />
+  <script defer src="js/pwa.js"></script>
   <script>
     const params = new URLSearchParams(window.location.search);
     if (params.get('room')) {
@@ -24,6 +32,12 @@
         <a class="btn-primary" href="roller.html">Roll the dice</a>
         <a class="btn-primary" href="generala.html">Play generala</a>
       </div>
+    </div>
+
+    <div class="pwa-install-bar" id="pwa-install-bar">
+      <button type="button" class="btn-ghost" id="btn-install-pwa">
+        Install App
+      </button>
     </div>
   </main>
 </body>

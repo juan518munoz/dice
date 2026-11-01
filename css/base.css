@@ -198,7 +198,7 @@ a {
   background: var(--pip);
   opacity: 0;
   transform: scale(0.4);
-  transition: opacity 0.1s ease, transform 0.12s ease;
+  transition: opacity 0.1s ease, transform 0.12s ease, background-color 0.15s ease;
 }
 
 .pip.active {
@@ -207,9 +207,12 @@ a {
 }
 
 .die[data-val="1"] .pip.active {
-  background: var(--red);
   width: 88%;
   height: 88%;
+}
+
+.die.held .pip.active {
+  background: var(--red);
 }
 
 /* Modals */
@@ -251,4 +254,18 @@ a {
 .modal-title {
   font-size: 20px;
   font-weight: 700;
+}
+
+/* Mobile PWA Install Bar */
+.pwa-install-bar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: none;
+}
+
+.pwa-install-bar.visible {
+  display: block;
 }

@@ -2,11 +2,11 @@
   <style>
     rect { fill: #ffffff; stroke: #1c1b18; }
     circle { fill: #1c1b18; }
-    .r { fill: #d9463e; }
+    .r { fill: #2563eb; }
     @media (prefers-color-scheme: dark) {
       rect { fill: #171717; stroke: #f2ede4; }
       circle { fill: #f2ede4; }
-      .r { fill: #e5534b; }
+      .r { fill: #3b82f6; }
     }
   </style>
   <rect x="4" y="4" width="56" height="56" rx="14" stroke-width="5" />

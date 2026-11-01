@@ -1,7 +1,8 @@
 (function () {
   let enabled = localStorage.getItem('generala_notifications') !== 'off';
+  let soundEnabled = localStorage.getItem('generala_sound') !== 'off';
   let audioCtx = null;
-  const baseTitle = document.title || 'Generala — Dice';
+  const baseTitle = document.title || 'Dice';
   let titleTimer = null;
 
   function unlockAudio() {
@@ -22,6 +23,7 @@
   });
 
   function playAlertTone() {
+    if (!soundEnabled) return;
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) return;
     try {
@@ -85,10 +87,7 @@
   }
 
   function getStatusLabel() {
-    if (!enabled) return 'Alerts: Off';
-    if (!isSupported()) return 'Alerts: On';
-    if (Notification.permission === 'default') return 'Enable Alerts';
-    return 'Alerts: On';
+    return '⚙ Settings';
   }
 
   function needsPermissionPrompt() {
@@ -110,64 +109,191 @@
         enabled = true;
         localStorage.setItem('generala_notifications', 'on');
         sendSystemNotification(
-          'Generala Alerts Enabled',
-          "You'll receive notifications when it's your turn or someone chats.",
+          'Notifications Enabled',
+          "You'll receive alerts on your turn and new chat messages.",
           'generala-enabled'
         );
       }
+      syncSettingsModalUI();
       return res;
     } catch (_) {
+      syncSettingsModalUI();
       return Notification.permission;
     }
   }
 
-  async function toggleEnabled() {
+  async function setNotificationsEnabled(nextState) {
     unlockAudio();
-
-    // If currently off, or if browser permission hasn't been asked yet, turn ON & request permission
-    if (!enabled || (isSupported() && Notification.permission === 'default')) {
-      enabled = true;
-      localStorage.setItem('generala_notifications', 'on');
-      playAlertTone();
-
+    enabled = Boolean(nextState);
+    localStorage.setItem('generala_notifications', enabled ? 'on' : 'off');
+    if (enabled) {
       if (isSupported() && Notification.permission === 'default') {
-        const res = await requestPermission();
-        if (res === 'granted') {
-          showToast('Alerts Enabled', 'System notifications, sound, and in-app alerts are active.');
-        } else {
-          showToast('In-App Alerts Enabled', 'Allow browser notifications in site settings for background banners.');
-        }
+        await requestPermission();
       } else if (isSupported() && Notification.permission === 'granted') {
-        showToast('Alerts On', 'Notifications are active for this lobby.');
         sendSystemNotification(
-          'Generala Alerts On',
-          'System notifications are active for this lobby.',
+          'Notifications On',
+          'System notifications are active.',
           'generala-toggle'
         );
-      } else {
-        showToast('In-App Alerts On', 'Sound & banner alerts enabled (allow site notifications in browser settings for OS banners).');
       }
-      return getStatusLabel();
+      showToast('Notifications On', 'Turn and chat notifications are active.');
+    } else {
+      clearTitleFlash();
+      showToast('Notifications Off', 'All notifications are muted.');
+    }
+    syncSettingsModalUI();
+    return enabled;
+  }
+
+  function setSoundEnabled(nextState) {
+    unlockAudio();
+    soundEnabled = Boolean(nextState);
+    localStorage.setItem('generala_sound', soundEnabled ? 'on' : 'off');
+    if (soundEnabled) {
+      playAlertTone();
+      showToast('Sound On', 'Notification chime enabled.');
+    } else {
+      showToast('Sound Off', 'Notification chime muted (banners remain active).');
+    }
+    syncSettingsModalUI();
+    return soundEnabled;
+  }
+
+  function ensureSettingsModal() {
+    let modal = document.getElementById('modal-settings');
+    if (modal) return modal;
+
+    modal = document.createElement('div');
+    modal.className = 'modal-backdrop hidden';
+    modal.id = 'modal-settings';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+
+    modal.innerHTML = `
+      <div class="modal-card settings-modal-card">
+        <h2 class="modal-title">Settings</h2>
+
+        <div class="settings-list">
+          <div class="settings-item">
+            <div class="settings-info">
+              <span class="settings-label">Notifications</span>
+              <span class="settings-desc" id="settings-notify-sub">Turn &amp; chat banners</span>
+            </div>
+            <button type="button" class="btn-setting-toggle" id="btn-toggle-notifications">ON</button>
+          </div>
+
+          <div class="settings-item">
+            <div class="settings-info">
+              <span class="settings-label">Notification Sound</span>
+              <span class="settings-desc" id="settings-sound-sub">Chime on alerts</span>
+            </div>
+            <button type="button" class="btn-setting-toggle" id="btn-toggle-sound">ON</button>
+          </div>
+        </div>
+
+        <button type="button" class="btn-primary" id="btn-close-settings">Done</button>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const btnToggleNotify = modal.querySelector('#btn-toggle-notifications');
+    const btnToggleSound = modal.querySelector('#btn-toggle-sound');
+    const btnClose = modal.querySelector('#btn-close-settings');
+
+    btnToggleNotify.addEventListener('click', () => {
+      if (enabled && isSupported() && Notification.permission === 'default') {
+        requestPermission();
+      } else {
+        setNotificationsEnabled(!enabled);
+      }
+    });
+
+    btnToggleSound.addEventListener('click', () => {
+      setSoundEnabled(!soundEnabled);
+    });
+
+    btnClose.addEventListener('click', () => {
+      modal.classList.add('hidden');
+    });
+
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.classList.add('hidden');
+    });
+
+    return modal;
+  }
+
+  function syncSettingsModalUI() {
+    const modal = document.getElementById('modal-settings');
+    if (!modal) return;
+
+    const btnToggleNotify = modal.querySelector('#btn-toggle-notifications');
+    const btnToggleSound = modal.querySelector('#btn-toggle-sound');
+    const notifySub = modal.querySelector('#settings-notify-sub');
+    const soundSub = modal.querySelector('#settings-sound-sub');
+
+    if (btnToggleNotify) {
+      const needPerm = enabled && isSupported() && Notification.permission === 'default';
+      btnToggleNotify.textContent = needPerm ? 'ALLOW OS' : (enabled ? 'ON' : 'OFF');
+      btnToggleNotify.classList.toggle('is-on', enabled);
+      btnToggleNotify.classList.toggle('is-off', !enabled);
     }
 
-    // Otherwise toggle OFF
-    enabled = false;
-    localStorage.setItem('generala_notifications', 'off');
-    clearTitleFlash();
-    showToast('Alerts Off', 'Notifications muted for this device.');
-    return getStatusLabel();
+    if (notifySub) {
+      if (!enabled) {
+        notifySub.textContent = 'All alerts muted';
+      } else if (!isSupported()) {
+        notifySub.textContent = 'In-app toast alerts active';
+      } else if (Notification.permission === 'granted') {
+        notifySub.textContent = 'System & in-app banners active';
+      } else if (Notification.permission === 'default') {
+        notifySub.textContent = 'Tap ALLOW OS for background banners';
+      } else {
+        notifySub.textContent = 'In-app active (OS blocked in browser)';
+      }
+    }
+
+    if (btnToggleSound) {
+      btnToggleSound.textContent = soundEnabled ? 'ON' : 'OFF';
+      btnToggleSound.classList.toggle('is-on', soundEnabled);
+      btnToggleSound.classList.toggle('is-off', !soundEnabled);
+    }
+
+    if (soundSub) {
+      soundSub.textContent = soundEnabled ? 'Audio chime enabled' : 'Silent notifications';
+    }
+  }
+
+  function openSettings() {
+    unlockAudio();
+    const modal = ensureSettingsModal();
+    syncSettingsModalUI();
+    modal.classList.remove('hidden');
+    return Promise.resolve(getStatusLabel());
+  }
+
+  // Keep toggleEnabled mapped to openSettings so clicking any Settings/Alerts button opens the Settings dialog
+  function toggleEnabled() {
+    return openSettings();
   }
 
   function isActive() {
     return enabled;
   }
 
+  function isSoundActive() {
+    return soundEnabled;
+  }
+
   function sendSystemNotification(title, body, tag) {
     if (!isSupported() || Notification.permission !== 'granted') return;
 
-    let iconUrl = 'assets/icon-192.png';
+    let iconUrl = 'assets/notify-icon.png';
+    let badgeUrl = 'assets/notify-badge.png';
     try {
-      iconUrl = new URL('assets/icon-192.png', window.location.href).href;
+      iconUrl = new URL('assets/notify-icon.png', window.location.href).href;
+      badgeUrl = new URL('assets/notify-badge.png', window.location.href).href;
     } catch (_) {}
 
     const uniqueTag = (tag || 'generala-alert') + '-' + Date.now();
@@ -175,7 +301,8 @@
       body,
       tag: uniqueTag,
       icon: iconUrl,
-      badge: iconUrl
+      badge: badgeUrl,
+      silent: !soundEnabled
     };
 
     let shownNatively = false;
@@ -236,8 +363,12 @@
     getStatusLabel,
     needsPermissionPrompt,
     isActive,
+    isSoundActive,
     requestPermission,
+    openSettings,
     toggleEnabled,
+    setNotificationsEnabled,
+    setSoundEnabled,
     notify
   };
 })();

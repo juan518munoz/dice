@@ -4,22 +4,31 @@
 
 .truco-game-screen {
   max-width: 1400px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .truco-game-layout {
   grid-template-columns: minmax(0, 1fr) 376px;
   gap: clamp(16px, 2.2vw, 24px);
   align-items: start;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 @media (max-width: 1020px) {
   .truco-game-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
 /* Truco Left Panel (POV Card Table & Controls) */
 .truco-table-panel {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   background: var(--hud-bg);
   border: 3.5px solid var(--hud-border);
   border-radius: 18px;
@@ -103,6 +112,10 @@
    ========================================================================== */
 .truco-felt-arena {
   position: relative;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -113,10 +126,10 @@
   background:
     radial-gradient(ellipse 85% 65% at 50% 46%, #2d785c 0%, #1c503d 62%, #113326 100%);
   /* Wood / Leather Casino Table Rim */
-  border: 6px solid #3d2314;
-  outline: 3.5px solid var(--hud-border);
-  border-radius: 24px;
+  border: 5px solid #3d2314;
+  border-radius: 22px;
   box-shadow:
+    0 0 0 3px var(--hud-border),
     inset 0 0 0 3px #6b4026,
     inset 0 12px 28px rgba(0, 0, 0, 0.72),
     inset 0 -14px 24px rgba(0, 0, 0, 0.55),
@@ -659,16 +672,19 @@
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .trick-col {
+  min-width: 0;
+  box-sizing: border-box;
   background: rgba(11, 20, 16, 0.44);
   border: 2.5px solid rgba(11, 15, 17, 0.72);
   border-radius: 16px;
-  padding: 12px 10px;
+  padding: 10px 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -677,6 +693,7 @@
   min-height: 205px;
   box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.45);
   transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+  overflow: hidden;
 }
 
 .trick-col.active-trick {
@@ -1289,67 +1306,388 @@
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.85);
 }
 
-/* Mobile Responsive Adjustments for POV Table & Large Cards */
+/* Mobile Responsive Adjustments for POV Table & Compact Layout */
 @media (max-width: 720px) {
+  .game-screen {
+    padding: 8px 6px 14px;
+    gap: 10px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .truco-table-panel {
+    padding: 10px 8px;
+    border-width: 2.5px;
+    border-radius: 14px;
+    gap: 10px;
+  }
+
+  .truco-hud-strip {
+    gap: 6px;
+  }
+
+  .balatro-mult-box {
+    gap: 5px;
+    padding: 4px 6px;
+  }
+
+  .b-chip, .b-mult {
+    font-size: 12px;
+    padding: 3px 7px;
+  }
+
+  .b-times {
+    font-size: 13px;
+  }
+
+  .envido-pill {
+    font-size: 12px;
+    padding: 5px 8px;
+  }
+
   .truco-felt-arena {
-    padding: 14px 10px 18px;
-    min-height: 490px;
+    padding: 10px 6px 12px;
+    min-height: 420px;
+    gap: 10px;
+    border-width: 3.5px;
+    border-radius: 16px;
+    box-shadow:
+      0 0 0 2px var(--hud-border),
+      inset 0 0 0 2px #6b4026,
+      inset 0 8px 18px rgba(0, 0, 0, 0.72),
+      inset 0 -8px 16px rgba(0, 0, 0, 0.55),
+      0 6px 0 var(--hud-border),
+      0 10px 20px rgba(0, 0, 0, 0.65);
   }
 
-  .tricks-board {
-    gap: 8px;
+  .truco-felt-arena::before {
+    inset: 6px;
   }
 
-  .trick-col {
-    padding: 8px 4px;
-    min-height: 175px;
+  .arena-seat-header {
+    min-height: 28px;
+    gap: 6px;
   }
 
-  .trick-slots {
-    gap: 4px;
-    min-height: 128px;
+  .seat-badge {
+    padding: 3px 9px;
   }
 
-  .truco-card {
-    width: 104px;
-    height: 148px;
+  .arena-player-name {
+    font-size: 12px;
   }
 
-  .truco-card .suit-svg {
-    width: 58px;
-    height: 58px;
+  .pixel-chat-blob {
+    font-size: 13px;
+    padding: 5px 12px 8px;
+    border-width: 2.5px;
+    border-radius: 10px;
+    max-width: 85%;
   }
 
-  .truco-card.card-small,
-  .truco-card.card-table {
-    width: 74px;
-    height: 106px;
-    padding: 5px;
+  .pixel-chat-blob::after {
+    bottom: -10px;
+    width: 12px;
+    height: 10px;
   }
 
-  .truco-card.card-small .suit-svg,
-  .truco-card.card-table .suit-svg {
-    width: 40px;
-    height: 40px;
+  .opponent-cards-row {
+    min-height: 70px;
+    gap: 6px;
   }
 
-  .truco-card.card-small .tcard-rank,
-  .truco-card.card-table .tcard-rank {
-    font-size: 15px;
+  .opponent-cards-row .truco-card.card-back {
+    width: 48px;
+    height: 68px;
+    padding: 3px;
+    border-radius: 7px;
   }
 
-  .my-cards-row {
-    min-height: 160px;
+  .card-back-emblem {
+    font-size: 14px;
+  }
+
+  .mazo-deck-indicator {
+    right: 2px;
+    gap: 3px;
+  }
+
+  .mazo-deck-indicator.my-mazo-deck {
+    right: 2px;
   }
 
   .mazo-deck-stack,
   .mazo-deck-stack .truco-card.card-back.mazo-layer {
-    width: 46px;
-    height: 66px;
+    width: 34px;
+    height: 48px;
+    padding: 3px;
   }
 
   .mazo-deck-label {
-    font-size: 8.5px;
+    font-size: 7.5px;
+    padding: 1px 3px;
+  }
+
+  /* Compact Envido Banner on Mobile */
+  .envido-resolution-box {
+    padding: 6px 8px;
+    gap: 6px;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .env-res-left {
+    gap: 6px;
+    justify-content: center;
+  }
+
+  .env-res-title {
+    font-size: 12px;
+  }
+
+  .env-res-tag {
+    font-size: 10px;
     padding: 2px 5px;
+  }
+
+  .env-res-pts-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+    white-space: normal;
+  }
+
+  .env-res-tantos {
+    font-size: 12px;
+    gap: 4px;
+  }
+
+  .tanto-chip {
+    font-size: 10px;
+    padding: 2px 5px;
+  }
+
+  /* Compact Hand Outcome Box on Mobile */
+  .hand-outcome-box {
+    padding: 10px 12px;
+    border-radius: 12px;
+    gap: 6px;
+  }
+
+  .ho-winner-title {
+    font-size: 16px;
+  }
+
+  .ho-pts-pill {
+    font-size: 12px;
+    padding: 3px 8px;
+  }
+
+  .ho-reason {
+    font-size: 12px;
+  }
+
+  /* Tricks board & vertically stacked overlapping cards */
+  .tricks-board {
+    gap: 6px;
+  }
+
+  .trick-col {
+    padding: 6px 3px 8px;
+    min-height: 136px;
+    border-radius: 12px;
+    border-width: 2px;
+    gap: 4px;
+  }
+
+  .trick-slots {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    min-height: 108px;
+    width: 100%;
+  }
+
+  .trick-card-wrap.opp-played-card {
+    transform: translateY(0);
+    z-index: 1;
+  }
+
+  .trick-card-wrap.my-played-card {
+    margin-top: -32px;
+    z-index: 2;
+    transform: rotate(2deg);
+  }
+
+  .trick-card-wrap:first-child:last-child {
+    margin-top: 0;
+  }
+
+  .truco-card.card-small,
+  .truco-card.card-table {
+    width: 58px;
+    height: 82px;
+    padding: 4px;
+    border-radius: 8px;
+    border-width: 2px;
+  }
+
+  .truco-card.card-small .suit-svg,
+  .truco-card.card-table .suit-svg {
+    width: 30px;
+    height: 30px;
+  }
+
+  .truco-card.card-small .tcard-rank,
+  .truco-card.card-table .tcard-rank {
+    font-size: 12px;
+  }
+
+  .truco-card.card-small .tcard-corner-svg,
+  .truco-card.card-table .tcard-corner-svg {
+    width: 8px;
+    height: 18px;
+  }
+
+  .truco-card.card-small .tcard-top-left,
+  .truco-card.card-table .tcard-top-left {
+    top: 4px;
+    left: 4px;
+    width: 14px;
+  }
+
+  .truco-card.card-small .tcard-bottom-right,
+  .truco-card.card-table .tcard-bottom-right {
+    bottom: 4px;
+    right: 4px;
+    width: 14px;
+  }
+
+  .truco-card.card-small .tcard-fig-tag,
+  .truco-card.card-table .tcard-fig-tag {
+    font-size: 7px;
+    padding: 1px 2px;
+  }
+
+  .trick-card-owner {
+    font-size: 8px;
+    padding: 1px 3px;
+    max-width: 56px;
+  }
+
+  .trick-badge {
+    font-size: 9px;
+    padding: 1px 5px;
+    min-height: 16px;
+  }
+
+  /* My Hand Cards on Mobile */
+  .my-cards-row {
+    min-height: 126px;
+    gap: clamp(4px, 1.8vw, 8px);
+    padding: 4px 2px 2px;
+  }
+
+  .my-cards-row .truco-card {
+    width: clamp(72px, 21.5vw, 86px);
+    height: clamp(102px, 30.5vw, 122px);
+    padding: 6px 4px;
+    border-radius: 10px;
+    border-width: 2.5px;
+  }
+
+  .my-cards-row .truco-card .suit-svg {
+    width: clamp(38px, 11vw, 48px);
+    height: clamp(38px, 11vw, 48px);
+  }
+
+  .my-cards-row .truco-card .tcard-rank {
+    font-size: clamp(15px, 4.2vw, 18px);
+  }
+
+  .my-cards-row .truco-card .tcard-corner-svg {
+    width: 9px;
+    height: 20px;
+  }
+
+  .my-cards-row .truco-card .tcard-fig-tag {
+    font-size: 8px;
+    padding: 1px 3px;
+  }
+
+  /* Controls on Mobile */
+  .action-banner {
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+
+  .truco-buttons-wrap {
+    gap: 6px;
+  }
+
+  .btn-call {
+    font-size: 12px;
+    padding: 7px 10px;
+    border-radius: 8px;
+  }
+
+  /* Scoreboard on Mobile */
+  .truco-score-panel {
+    padding: 10px 8px;
+    border-width: 2.5px;
+    border-radius: 14px;
+  }
+
+  .truco-scoreboard-grid {
+    gap: 6px;
+  }
+
+  .tscore-col {
+    padding: 6px;
+    gap: 6px;
+  }
+
+  .tscore-name {
+    font-size: 12px;
+  }
+
+  .tscore-stage-badge {
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+
+  .tscore-half {
+    padding: 4px 6px;
+    gap: 4px;
+  }
+
+  .tscore-half-label {
+    font-size: 9px;
+  }
+
+  .fosforos-group {
+    gap: 3px;
+  }
+
+  .fosforo-box {
+    width: 22px;
+    height: 22px;
+  }
+
+  .fosforo.m5 {
+    height: 22px;
+    left: 9px;
+  }
+
+  .tscore-total-box {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  .tscore-total-val {
+    font-size: 17px;
   }
 }

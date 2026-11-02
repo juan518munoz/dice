@@ -91,12 +91,15 @@
       tricks: createEmptyTricks(0),
       envidoUsed: false,
       envidoResultBanner: '',
+      envidoResolution: null,
       trucoLevel: 0,
       trucoPoints: 1,
       trucoOwnerIdx: null,
       pendingCall: null,
       lastActionBanner: '',
       lastSpeech: null,
+      playerSpeeches: [null, null],
+      lastPointEvent: null,
       handSummary: null,
       messages: [],
       updatedAt: Date.now()
@@ -440,14 +443,17 @@
     roomState.tricks = createEmptyTricks(manoIdx);
     roomState.envidoUsed = false;
     roomState.envidoResultBanner = '';
+    roomState.envidoResolution = null;
     roomState.trucoLevel = 0;
     roomState.trucoPoints = 1;
     roomState.trucoOwnerIdx = null;
     roomState.pendingCall = null;
     roomState.handSummary = null;
+    roomState.lastPointEvent = null;
     const manoName = roomState.players[manoIdx]?.name || 'Jugador';
     roomState.lastActionBanner = `Mano #${handNum} — ${manoName} es mano.`;
     roomState.lastSpeech = null;
+    roomState.playerSpeeches = [null, null];
   }
 
   function startOrResetMatch() {
@@ -464,10 +470,17 @@
     broadcastRoomState(true);
   }
 
-  function addPointsAndCheckWin(playerIdx, pts) {
+  function addPointsAndCheckWin(playerIdx, pts, sourceLabel = '') {
     const p = roomState.players[playerIdx];
     if (!p) return false;
     p.score = Math.min(30, (p.score || 0) + pts);
+    roomState.lastPointEvent = {
+      id: 'pt_' + Math.random().toString(36).slice(2, 8) + Date.now().toString(36),
+      playerIdx,
+      playerName: p.name,
+      pts,
+      sourceLabel
+    };
     if (p.score >= 30) {
       roomState.status = 'finished';
       roomState.pendingCall = null;
@@ -476,29 +489,43 @@
     return false;
   }
 
-  function finishHand(winnerIdx, pts, reasonText) {
+  function finishHand(winnerIdx, pts, reasonText, extra = {}) {
     const winnerName = roomState.players[winnerIdx]?.name || 'Jugador';
-    const matchEnded = addPointsAndCheckWin(winnerIdx, pts);
+    const loserIdx = 1 - winnerIdx;
+    const loserName = roomState.players[loserIdx]?.name || 'Jugador';
+    const callLabel = extra.callLabel || (roomState.trucoLevel > 0 ? getTrucoCallLabel(roomState.trucoLevel) : 'Mano Simple');
+    const matchEnded = addPointsAndCheckWin(winnerIdx, pts, callLabel);
     roomState.pendingCall = null;
     roomState.handSummary = {
       winnerIdx,
       winnerName,
+      loserIdx,
+      loserName,
       pts,
-      reasonText
+      reasonText,
+      callLabel,
+      finishType: extra.finishType || 'bazas',
+      envidoResolution: roomState.envidoResolution || null
     };
-    roomState.lastActionBanner = `${winnerName} gana la mano (+${pts} pt${pts === 1 ? '' : 's'}) — ${reasonText}`;
+    roomState.lastActionBanner = `¡${winnerName} gana la mano (+${pts} pt${pts === 1 ? '' : 's'})! — ${reasonText}`;
     if (!matchEnded) {
       roomState.status = 'hand_end';
     }
   }
 
-  function recordSpeech(playerIdx, text) {
-    roomState.lastSpeech = {
+  function recordSpeech(playerIdx, text, tone = 'call') {
+    const speechObj = {
       id: 'sp_' + Math.random().toString(36).slice(2, 8) + Date.now().toString(36),
       playerIdx,
       playerName: roomState.players[playerIdx]?.name || 'Jugador',
-      text
+      text,
+      tone
     };
+    roomState.lastSpeech = speechObj;
+    if (!Array.isArray(roomState.playerSpeeches)) {
+      roomState.playerSpeeches = [null, null];
+    }
+    roomState.playerSpeeches[playerIdx] = speechObj;
   }
 
   function canPlayerCallEnvidoNow(playerIdx) {
@@ -560,10 +587,12 @@
 
       const handWinner = evaluateHandOutcome(roomState.tricks, roomState.manoIndex);
       if (handWinner !== null) {
+        const callLbl = roomState.trucoLevel > 0 ? getTrucoCallLabel(roomState.trucoLevel) : 'Mano Simple';
         finishHand(
           handWinner,
           roomState.trucoPoints,
-          `Ganó las bazas (${roomState.trucoLevel > 0 ? getTrucoCallLabel(roomState.trucoLevel) : 'Mano simple'})`
+          `Ganó las bazas (${callLbl})`,
+          { finishType: 'bazas', callLabel: callLbl }
         );
         broadcastRoomState(true);
         return;
@@ -588,10 +617,14 @@
     if (myIdx === -1 || !canPlayerCallEnvidoNow(myIdx)) return;
 
     let newChain = [envidoType];
-    if (roomState.pendingCall && roomState.pendingCall.category === 'envido') {
+    const isRaise = Boolean(roomState.pendingCall && roomState.pendingCall.category === 'envido');
+    if (isRaise) {
       const allowed = getAvailableEnvidoRaises(roomState.pendingCall.chain);
       if (!allowed.includes(envidoType)) return;
       newChain = [...roomState.pendingCall.chain, envidoType];
+    } else {
+      // Fresh envido call: clear old speeches so the new exchange stands out
+      roomState.playerSpeeches = [null, null];
     }
 
     const label = getEnvidoCallLabel(envidoType);
@@ -605,7 +638,7 @@
       chain: newChain
     };
 
-    recordSpeech(myIdx, `¡${label}!`);
+    recordSpeech(myIdx, `¡${label}!`, 'envido');
     roomState.lastActionBanner = `${myPlayerName} cantó ¡${label.toUpperCase()}!`;
     broadcastRoomState(true);
   }
@@ -628,10 +661,24 @@
       const winnerIdx = call.callerIdx;
       const pts = chainInfo.declinedPoints;
       const winnerName = roomState.players[winnerIdx]?.name || 'Jugador';
-      recordSpeech(myIdx, 'No quiero');
-      roomState.envidoResultBanner = `Envido No Querido — +${pts} pt${pts === 1 ? '' : 's'} para ${winnerName}`;
-      roomState.lastActionBanner = `${myPlayerName}: "No quiero" (+${pts} pt${pts === 1 ? '' : 's'} para ${winnerName}).`;
-      addPointsAndCheckWin(winnerIdx, pts);
+      recordSpeech(myIdx, '¡No quiero!', 'decline');
+      roomState.envidoResolution = {
+        id: 'envres_' + Date.now(),
+        accepted: false,
+        callLabel: chainInfo.label,
+        callerIdx: call.callerIdx,
+        responderIdx: myIdx,
+        winnerIdx,
+        winnerName,
+        loserIdx: myIdx,
+        loserName: myPlayerName,
+        pts,
+        scores: null,
+        tieBreakMano: false
+      };
+      roomState.envidoResultBanner = `${chainInfo.label} No Querido — ¡Ganó ${winnerName} (+${pts} pt${pts === 1 ? '' : 's'})!`;
+      roomState.lastActionBanner = `${myPlayerName} dijo "No quiero". ¡${winnerName} gana el ${chainInfo.label} (+${pts} pt${pts === 1 ? '' : 's'})!`;
+      addPointsAndCheckWin(winnerIdx, pts, chainInfo.label);
       broadcastRoomState(true);
       return;
     }
@@ -640,6 +687,7 @@
     const e0 = getEnvidoScore(roomState.hands[0]);
     const e1 = getEnvidoScore(roomState.hands[1]);
     const winnerIdx = resolveEnvidoWinner(e0, e1, roomState.manoIndex);
+    const loserIdx = 1 - winnerIdx;
     const pts = chainInfo.isFalta
       ? getFaltaEnvidoPoints(s0, s1, winnerIdx)
       : chainInfo.acceptedBasePoints;
@@ -647,11 +695,37 @@
     const p0Name = roomState.players[0]?.name || 'J1';
     const p1Name = roomState.players[1]?.name || 'J2';
     const winnerName = roomState.players[winnerIdx]?.name || 'Jugador';
+    const loserName = roomState.players[loserIdx]?.name || 'Jugador';
+    const scores = [e0, e1];
+    const tieBreakMano = e0 === e1;
 
-    recordSpeech(myIdx, `¡Quiero! (${myIdx === 0 ? e0 : e1})`);
-    roomState.envidoResultBanner = `${chainInfo.label}: ${p0Name} (${e0}) vs ${p1Name} (${e1}) → +${pts} pts ${winnerName}!`;
-    roomState.lastActionBanner = `${roomState.envidoResultBanner}`;
-    addPointsAndCheckWin(winnerIdx, pts);
+    // Show clear tantear chat blobs for both players
+    if (winnerIdx === myIdx) {
+      recordSpeech(call.callerIdx, `Tengo ${scores[call.callerIdx]}`, 'envido');
+      recordSpeech(myIdx, `¡Quiero! ¡${scores[myIdx]} son mejores!`, 'accept');
+    } else {
+      recordSpeech(call.callerIdx, `¡Tengo ${scores[call.callerIdx]}!`, 'accept');
+      recordSpeech(myIdx, `¡Quiero! Son buenas (${scores[myIdx]})`, 'decline');
+    }
+
+    roomState.envidoResolution = {
+      id: 'envres_' + Date.now(),
+      accepted: true,
+      callLabel: chainInfo.label,
+      callerIdx: call.callerIdx,
+      responderIdx: myIdx,
+      winnerIdx,
+      winnerName,
+      loserIdx,
+      loserName,
+      pts,
+      scores,
+      tieBreakMano
+    };
+
+    roomState.envidoResultBanner = `¡${winnerName} ganó el ${chainInfo.label} (+${pts} pts)! [${p0Name}: ${e0} vs ${p1Name}: ${e1}${tieBreakMano ? ' · Mano' : ''}]`;
+    roomState.lastActionBanner = roomState.envidoResultBanner;
+    addPointsAndCheckWin(winnerIdx, pts, chainInfo.label);
     broadcastRoomState(true);
   }
 
@@ -660,6 +734,7 @@
     if (myIdx === -1 || !roomState || roomState.status !== 'playing') return;
 
     let nextLevel = roomState.trucoLevel + 1;
+    let isRaiseOverCall = false;
 
     // Can either call from normal play (no pendingCall) or raise an incoming Truco call ("Quiero Retruco!" / "Quiero Vale Cuatro!")
     if (roomState.pendingCall) {
@@ -673,6 +748,7 @@
         roomState.trucoPoints = roomState.trucoLevel + 1;
         roomState.trucoOwnerIdx = myIdx;
         nextLevel = roomState.trucoLevel + 1;
+        isRaiseOverCall = true;
       } else {
         return;
       }
@@ -680,6 +756,7 @@
       if (roomState.turnIndex !== myIdx) return;
       if (nextLevel > 3) return;
       if (roomState.trucoOwnerIdx !== null && roomState.trucoOwnerIdx !== myIdx) return;
+      roomState.playerSpeeches = [null, null];
     }
 
     const label = getTrucoCallLabel(nextLevel);
@@ -693,7 +770,7 @@
       targetLevel: nextLevel
     };
 
-    recordSpeech(myIdx, `¡${label}!`);
+    recordSpeech(myIdx, isRaiseOverCall ? `¡Quiero ${label}!` : `¡${label}!`, 'truco');
     roomState.lastActionBanner = `${myPlayerName} cantó ¡${label.toUpperCase()}!`;
     broadcastRoomState(true);
   }
@@ -708,9 +785,14 @@
     const label = getTrucoCallLabel(call.targetLevel);
 
     if (!accepted) {
-      recordSpeech(myIdx, 'No quiero');
+      recordSpeech(myIdx, '¡No quiero!', 'decline');
       const declinedPts = call.targetLevel; // Truco declined=1, Retruco declined=2, Vale Cuatro declined=3
-      finishHand(call.callerIdx, declinedPts, `${myPlayerName} no quiso el ${label}`);
+      finishHand(
+        call.callerIdx,
+        declinedPts,
+        `${label} No Querido (${myPlayerName} dijo "No quiero")`,
+        { finishType: 'truco_declined', callLabel: `${label} No Querido` }
+      );
       broadcastRoomState(true);
       return;
     }
@@ -721,8 +803,8 @@
     roomState.trucoOwnerIdx = myIdx;
     roomState.pendingCall = null;
 
-    recordSpeech(myIdx, '¡Quiero!');
-    roomState.lastActionBanner = `${myPlayerName} quiso el ${label} (en juego: ${roomState.trucoPoints} pts).`;
+    recordSpeech(myIdx, '¡Quiero!', 'accept');
+    roomState.lastActionBanner = `¡${label} Querido por ${myPlayerName}! Mano en juego por ${roomState.trucoPoints} puntos.`;
     broadcastRoomState(true);
   }
 
@@ -734,7 +816,7 @@
 
     const myPlayerName = roomState.players[myIdx]?.name || 'Jugador';
     const otherIdx = 1 - myIdx;
-    recordSpeech(myIdx, 'Me voy al mazo');
+    recordSpeech(myIdx, 'Me voy al mazo', 'decline');
 
     // In Argentine Truco, folding in Primera before Envido was resolved and before playing any card gives 2 pts (1 for mazo + 1 for unplayed envido) if no truco was accepted
     const noCardsPlayedByAnyone =
@@ -744,7 +826,12 @@
       ? 2
       : roomState.trucoPoints;
 
-    finishHand(otherIdx, pts, `${myPlayerName} se fue al mazo`);
+    finishHand(
+      otherIdx,
+      pts,
+      `${myPlayerName} se fue al mazo`,
+      { finishType: 'mazo', callLabel: 'Al Mazo' }
+    );
     broadcastRoomState(true);
   }
 

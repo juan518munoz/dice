@@ -43,15 +43,19 @@
   const hudMyEnvido = document.getElementById('hud-my-envido');
 
   const oppNameEl = document.getElementById('opp-name');
-  const oppManoTag = document.getElementById('opp-mano-tag');
+  const oppMazoDeck = document.getElementById('opp-mazo-deck');
   const oppSpeechEl = document.getElementById('opp-speech');
+  const oppSpeechTextEl = document.getElementById('opp-speech-text');
   const oppCardsRow = document.getElementById('opp-cards-row');
 
   const myNameEl = document.getElementById('my-name');
-  const myManoTag = document.getElementById('my-mano-tag');
+  const myMazoDeck = document.getElementById('my-mazo-deck');
   const mySpeechEl = document.getElementById('my-speech');
+  const mySpeechTextEl = document.getElementById('my-speech-text');
   const myCardsRow = document.getElementById('my-cards-row');
 
+  const envidoResolutionBox = document.getElementById('envido-resolution-box');
+  const handOutcomeBox = document.getElementById('hand-outcome-box');
   const actionBanner = document.getElementById('action-banner');
   const envidoBanner = document.getElementById('envido-banner');
   const trucoButtonsWrap = document.getElementById('truco-buttons-wrap');
@@ -286,34 +290,35 @@
     const myEnvidoVal = getEnvidoScore(myInitialHand);
     hudMyEnvido.textContent = `MI TANTO: ${myEnvidoVal}`;
 
-    // Player & Opponent Names + Mano tags + Speech Bubbles
+    // Player & Opponent Names + Mazo Deck on the Mano Player's Side + Pixel Chat Blobs
     oppNameEl.textContent = opp.name;
     myNameEl.textContent = `${me.name} (Vos)`;
-    oppManoTag.style.display = state.manoIndex === oppIdx ? 'inline-block' : 'none';
-    myManoTag.style.display = state.manoIndex === myIdx ? 'inline-block' : 'none';
+    const oppIsMano = state.manoIndex === oppIdx;
+    const myIsMano = state.manoIndex === myIdx;
+    if (oppMazoDeck) oppMazoDeck.style.display = oppIsMano ? 'flex' : 'none';
+    if (myMazoDeck) myMazoDeck.style.display = myIsMano ? 'flex' : 'none';
 
-    if (state.lastSpeech && state.lastSpeech.playerIdx === oppIdx) {
-      oppSpeechEl.textContent = state.lastSpeech.text;
-      oppSpeechEl.style.display = 'inline-block';
-    } else {
-      oppSpeechEl.style.display = 'none';
-    }
+    const oppSpeechObj =
+      (Array.isArray(state.playerSpeeches) && state.playerSpeeches[oppIdx]) ||
+      (state.lastSpeech && state.lastSpeech.playerIdx === oppIdx ? state.lastSpeech : null);
+    const mySpeechObj =
+      (Array.isArray(state.playerSpeeches) && state.playerSpeeches[myIdx]) ||
+      (state.lastSpeech && state.lastSpeech.playerIdx === myIdx ? state.lastSpeech : null);
 
-    if (state.lastSpeech && state.lastSpeech.playerIdx === myIdx) {
-      mySpeechEl.textContent = state.lastSpeech.text;
-      mySpeechEl.style.display = 'inline-block';
-    } else {
-      mySpeechEl.style.display = 'none';
-    }
+    renderPixelBlob(oppSpeechEl, oppSpeechTextEl, oppSpeechObj, 'opp-blob');
+    renderPixelBlob(mySpeechEl, mySpeechTextEl, mySpeechObj, 'my-blob');
 
-    // Opponent Remaining Cards (Card Backs)
+    // Opponent Remaining Cards (Card Backs fanned across the table)
     oppCardsRow.innerHTML = '';
     const oppRemaining = state.remainingCards?.[oppIdx]?.length || 0;
     for (let i = 0; i < oppRemaining; i++) {
       oppCardsRow.appendChild(createCardBackElement(false));
     }
 
-    // 3 Tricks / Bazas Slots
+    // Envido Resolution Showcase Box on the Table
+    renderEnvidoResolutionBox(state, myIdx, oppIdx);
+
+    // 3 Tricks / Bazas Slots (POV Table Layout)
     for (let t = 0; t < 3; t++) {
       const colEl = document.querySelector(`.trick-col[data-trick="${t}"]`);
       const slotEl = document.getElementById(`trick-slot-${t}`);
@@ -327,32 +332,39 @@
       const oppCard = trick ? (oppIdx === 0 ? trick.c0 : trick.c1) : null;
       const myCard = trick ? (myIdx === 0 ? trick.c0 : trick.c1) : null;
 
-      if (!oppCard && !myCard) {
-        const empty = document.createElement('span');
-        empty.className = 'trick-empty-slot';
-        empty.textContent = t === state.trickIndex && state.status === 'playing' ? 'En Juego' : '—';
-        slotEl.appendChild(empty);
-      } else {
-        if (oppCard) {
-          const wrap = document.createElement('div');
-          wrap.className = 'trick-card-wrap';
-          const owner = document.createElement('span');
-          owner.className = 'trick-card-owner';
-          owner.textContent = opp.name;
-          wrap.appendChild(owner);
-          wrap.appendChild(createTrucoCardElement(oppCard, { small: true }));
-          slotEl.appendChild(wrap);
-        }
-        if (myCard) {
-          const wrap = document.createElement('div');
-          wrap.className = 'trick-card-wrap';
-          const owner = document.createElement('span');
-          owner.className = 'trick-card-owner';
-          owner.textContent = 'Vos';
-          wrap.appendChild(owner);
-          wrap.appendChild(createTrucoCardElement(myCard, { small: true }));
-          slotEl.appendChild(wrap);
-        }
+      if (oppCard) {
+        const wrap = document.createElement('div');
+        const oppWonTrick = trick.winner === oppIdx;
+        const myWonTrick = trick.winner === myIdx;
+        wrap.className = [
+          'trick-card-wrap',
+          'opp-played-card',
+          oppWonTrick ? 'winning-trick-card' : '',
+          myWonTrick ? 'losing-trick-card' : ''
+        ].filter(Boolean).join(' ');
+        const owner = document.createElement('span');
+        owner.className = 'trick-card-owner';
+        owner.textContent = opp.name;
+        wrap.appendChild(owner);
+        wrap.appendChild(createTrucoCardElement(oppCard, { tableCard: true }));
+        slotEl.appendChild(wrap);
+      }
+      if (myCard) {
+        const wrap = document.createElement('div');
+        const myWonTrick = trick.winner === myIdx;
+        const oppWonTrick = trick.winner === oppIdx;
+        wrap.className = [
+          'trick-card-wrap',
+          'my-played-card',
+          myWonTrick ? 'winning-trick-card' : '',
+          oppWonTrick ? 'losing-trick-card' : ''
+        ].filter(Boolean).join(' ');
+        const owner = document.createElement('span');
+        owner.className = 'trick-card-owner';
+        owner.textContent = 'Vos';
+        wrap.appendChild(owner);
+        wrap.appendChild(createTrucoCardElement(myCard, { tableCard: true }));
+        slotEl.appendChild(wrap);
       }
 
       badgeEl.className = 'trick-badge';
@@ -361,10 +373,10 @@
           badgeEl.textContent = 'Parda';
           badgeEl.classList.add('win-tie');
         } else if (trick.winner === myIdx) {
-          badgeEl.textContent = 'Ganada';
+          badgeEl.textContent = '¡Ganada!';
           badgeEl.classList.add('win-me');
         } else {
-          badgeEl.textContent = opp.name;
+          badgeEl.textContent = `Ganó ${opp.name}`;
           badgeEl.classList.add('win-opp');
         }
       } else {
@@ -372,7 +384,10 @@
       }
     }
 
-    // My Hand Cards
+    // Hand / Truco Outcome Showcase Box (Shown when hand ends)
+    renderHandOutcomeBox(state, myIdx);
+
+    // My Hand Cards (Large First-Person POV Fan)
     myCardsRow.innerHTML = '';
     const myRemaining = state.remainingCards?.[myIdx] || [];
     const canPlayCardNow =
@@ -392,7 +407,7 @@
     actionBanner.textContent = state.lastActionBanner || 'Partida en curso';
     actionBanner.classList.toggle('urgent-call', Boolean(state.pendingCall && state.pendingCall.responderIdx === myIdx));
 
-    if (state.envidoResultBanner) {
+    if (state.envidoResultBanner && !state.envidoResolution) {
       envidoBanner.textContent = state.envidoResultBanner;
       envidoBanner.style.display = 'block';
     } else {
@@ -406,6 +421,116 @@
       showWinnerModal(state);
     } else {
       modalWinner.classList.add('hidden');
+    }
+  }
+
+  function renderPixelBlob(blobEl, textEl, speechObj, sideClass) {
+    if (!blobEl) return;
+    if (!speechObj || !speechObj.text) {
+      blobEl.style.display = 'none';
+      blobEl.dataset.speechId = '';
+      return;
+    }
+    const toneClass = speechObj.tone ? `tone-${speechObj.tone}` : '';
+    blobEl.className = ['pixel-chat-blob', sideClass, toneClass].filter(Boolean).join(' ');
+    if (textEl) {
+      textEl.textContent = speechObj.text;
+    } else {
+      blobEl.textContent = speechObj.text;
+    }
+    blobEl.style.display = 'inline-flex';
+    if (blobEl.dataset.speechId !== speechObj.id) {
+      blobEl.dataset.speechId = speechObj.id || '';
+      blobEl.style.animation = 'none';
+      void blobEl.offsetWidth;
+      blobEl.style.animation = '';
+    }
+  }
+
+  function renderEnvidoResolutionBox(state, myIdx, oppIdx) {
+    if (!envidoResolutionBox) return;
+    const res = state.envidoResolution;
+    if (!res) {
+      envidoResolutionBox.style.display = 'none';
+      envidoResolutionBox.innerHTML = '';
+      return;
+    }
+
+    const iWon = res.winnerIdx === myIdx;
+    envidoResolutionBox.className = `envido-resolution-box ${iWon ? 'won-by-me' : 'won-by-opp'}`;
+    envidoResolutionBox.style.display = 'flex';
+
+    const winnerLabel = iWon ? '¡GANASTE EL ENVIDO!' : `¡${res.winnerName} GANÓ EL ENVIDO!`;
+    let tantosHTML = '';
+
+    if (res.accepted && Array.isArray(res.scores)) {
+      const myTanto = res.scores[myIdx];
+      const oppTanto = res.scores[oppIdx];
+      const oppName = state.players[oppIdx]?.name || 'Rival';
+      tantosHTML = `
+        <div class="env-res-tantos">
+          <span class="tanto-chip ${iWon ? 'winner-tanto' : ''}">Vos: ${myTanto}${iWon ? ' ★' : ''}</span>
+          <span>vs</span>
+          <span class="tanto-chip ${!iWon ? 'winner-tanto' : ''}">${oppName}: ${oppTanto}${!iWon ? ' ★' : ''}</span>
+          ${res.tieBreakMano ? '<span class="tanto-chip winner-tanto">Por ser Mano</span>' : ''}
+        </div>
+      `;
+    } else {
+      tantosHTML = `<span class="tanto-chip">No Querido (dijo "No quiero")</span>`;
+    }
+
+    envidoResolutionBox.innerHTML = `
+      <div class="env-res-left">
+        <span class="env-res-tag">${res.callLabel || 'Envido'}</span>
+        <span class="env-res-title">${winnerLabel}</span>
+        ${tantosHTML}
+      </div>
+      <span class="env-res-pts-badge ${iWon ? 'pts-me' : 'pts-opp'}">
+        +${res.pts} PUNTO${res.pts === 1 ? '' : 'S'} PARA ${res.winnerName}
+      </span>
+    `;
+  }
+
+  function renderHandOutcomeBox(state, myIdx) {
+    if (!handOutcomeBox) return;
+    const sum = state.handSummary;
+    if (!sum || (state.status !== 'hand_end' && state.status !== 'finished')) {
+      handOutcomeBox.style.display = 'none';
+      handOutcomeBox.innerHTML = '';
+      return;
+    }
+
+    const iWon = sum.winnerIdx === myIdx;
+    handOutcomeBox.className = `hand-outcome-box ${iWon ? 'won-by-me' : 'won-by-opp'}`;
+    handOutcomeBox.style.display = 'flex';
+
+    const headline = iWon
+      ? `🏆 ¡GANASTE LA MANO!`
+      : `¡${sum.winnerName} GANÓ LA MANO!`;
+
+    const envRes = sum.envidoResolution || state.envidoResolution;
+    const envRecapHTML = envRes
+      ? `<div class="ho-envido-recap">Envido en esta mano: <strong>Ganó ${envRes.winnerName} (+${envRes.pts} pt${envRes.pts === 1 ? '' : 's'})</strong></div>`
+      : '';
+
+    handOutcomeBox.innerHTML = `
+      <div class="ho-header">
+        <span class="ho-winner-title">${headline}</span>
+        <span class="ho-pts-pill">+${sum.pts} PUNTO${sum.pts === 1 ? '' : 'S'} PARA ${sum.winnerName.toUpperCase()}</span>
+      </div>
+      <div class="ho-reason">${sum.reasonText || ''}</div>
+      ${envRecapHTML}
+    `;
+
+    if (state.status === 'hand_end') {
+      const btnNext = document.createElement('button');
+      btnNext.type = 'button';
+      btnNext.className = 'btn-primary btn-green';
+      btnNext.style.maxWidth = '320px';
+      btnNext.style.marginTop = '4px';
+      btnNext.textContent = 'Siguiente Mano (Repartir) →';
+      btnNext.addEventListener('click', () => Net.nextHand());
+      handOutcomeBox.appendChild(btnNext);
     }
   }
 
@@ -537,6 +662,7 @@
       const colEl = document.getElementById(`tscore-col-${idx}`);
       const nameEl = document.getElementById(`tscore-name-${idx}`);
       const stageEl = document.getElementById(`tscore-stage-${idx}`);
+      const deltaEl = document.getElementById(`tscore-delta-${idx}`);
       const malasNumEl = document.getElementById(`tscore-malas-num-${idx}`);
       const malasFosfEl = document.getElementById(`tscore-malas-fosf-${idx}`);
       const buenasNumEl = document.getElementById(`tscore-buenas-num-${idx}`);
@@ -548,6 +674,16 @@
       if (stageEl) {
         stageEl.textContent = `${bm.count} ${bm.stage}`;
         stageEl.classList.toggle('buenas', total >= 15);
+      }
+      if (deltaEl) {
+        const ptEv = state.lastPointEvent;
+        if (ptEv && ptEv.playerIdx === idx) {
+          deltaEl.textContent = `+${ptEv.pts} PT${ptEv.pts === 1 ? '' : 'S'}${ptEv.sourceLabel ? ` (${ptEv.sourceLabel})` : ''}`;
+          deltaEl.style.display = 'block';
+        } else {
+          deltaEl.style.display = 'none';
+          deltaEl.textContent = '';
+        }
       }
       if (malasNumEl) malasNumEl.textContent = `${malasPts} / 15`;
       if (malasFosfEl) malasFosfEl.innerHTML = renderMatchsticksHTML(malasPts);

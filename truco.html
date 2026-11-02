@@ -108,7 +108,7 @@
   </section>
 
   <!-- 3. ACTIVE GAME SCREEN -->
-  <section class="screen game-screen" id="screen-game">
+  <section class="screen game-screen truco-game-screen" id="screen-game">
     <header class="topbar">
       <div class="topbar-left">
         <span class="conn-dot" id="game-conn-dot" title="Live connection status"></span>
@@ -124,8 +124,8 @@
       <button type="button" class="btn-ghost" id="btn-exit-game">Leave</button>
     </header>
 
-    <div class="game-layout">
-      <!-- Left: Card Table & Action Controls -->
+    <div class="game-layout truco-game-layout">
+      <!-- Left: POV Card Table & Action Controls -->
       <div class="truco-table-panel">
         <div class="truco-hud-strip">
           <div class="balatro-mult-box">
@@ -136,45 +136,76 @@
           <div class="envido-pill" id="hud-my-envido">MI TANTO: --</div>
         </div>
 
-        <!-- Green Felt Arena -->
+        <!-- POV Casino Felt Arena -->
         <div class="truco-felt-arena">
-          <!-- Opponent Area -->
+          <!-- Far Edge of Table: Rival Seat + Cards + Pixel Chat Blob -->
           <div class="arena-player-row opponent-row">
-            <div class="arena-player-info">
-              <span class="arena-player-name" id="opp-name">Rival</span>
-              <span class="mano-tag" id="opp-mano-tag" style="display: none;">MANO</span>
-              <div class="speech-bubble" id="opp-speech" style="display: none;"></div>
+            <div class="arena-seat-header">
+              <div class="seat-badge rival-seat-badge">
+                <span class="arena-player-name" id="opp-name">Rival</span>
+              </div>
+              <div class="pixel-chat-blob opp-blob" id="opp-speech" style="display: none;">
+                <span class="blob-text" id="opp-speech-text"></span>
+              </div>
             </div>
-            <div class="opponent-cards-row" id="opp-cards-row"></div>
+            <div class="seat-table-zone">
+              <div class="opponent-cards-row" id="opp-cards-row"></div>
+              <div class="mazo-deck-indicator" id="opp-mazo-deck" style="display: none;" title="Mazo — Rival es Mano">
+                <div class="mazo-deck-stack">
+                  <div class="truco-card card-back mazo-layer l1"><div class="card-back-pattern"><span class="card-back-emblem">★</span></div></div>
+                  <div class="truco-card card-back mazo-layer l2"><div class="card-back-pattern"><span class="card-back-emblem">★</span></div></div>
+                  <div class="truco-card card-back mazo-layer l3"><div class="card-back-pattern"><span class="card-back-emblem">★</span></div></div>
+                </div>
+                <span class="mazo-deck-label">MANO</span>
+              </div>
+            </div>
           </div>
 
-          <!-- 3 Tricks / Bazas Table Slots -->
+          <!-- Envido Result Showdown Banner (Shows clearly who won Envido & Tanto comparison) -->
+          <div class="envido-resolution-box" id="envido-resolution-box" style="display: none;"></div>
+
+          <!-- Center of Table: 3 Tricks / Bazas Table Slots -->
           <div class="tricks-board" id="tricks-board">
             <div class="trick-col" data-trick="0">
-              <span class="trick-title">1ª Baza</span>
               <div class="trick-slots" id="trick-slot-0"></div>
               <span class="trick-badge" id="trick-badge-0"></span>
             </div>
             <div class="trick-col" data-trick="1">
-              <span class="trick-title">2ª Baza</span>
               <div class="trick-slots" id="trick-slot-1"></div>
               <span class="trick-badge" id="trick-badge-1"></span>
             </div>
             <div class="trick-col" data-trick="2">
-              <span class="trick-title">3ª Baza</span>
               <div class="trick-slots" id="trick-slot-2"></div>
               <span class="trick-badge" id="trick-badge-2"></span>
             </div>
           </div>
 
-          <!-- My Hand Area -->
+          <!-- Hand / Truco Winner Showcase Banner (Shown clearly when hand ends) -->
+          <div class="hand-outcome-box" id="hand-outcome-box" style="display: none;"></div>
+
+          <!-- Foreground POV Edge: My Hand + My Pixel Chat Blob -->
           <div class="arena-player-row my-row">
-            <div class="arena-player-info">
-              <span class="arena-player-name" id="my-name">You</span>
-              <span class="mano-tag" id="my-mano-tag" style="display: none;">MANO</span>
-              <div class="speech-bubble me" id="my-speech" style="display: none;"></div>
+            <div class="my-speech-row">
+              <div class="pixel-chat-blob my-blob" id="my-speech" style="display: none;">
+                <span class="blob-text" id="my-speech-text"></span>
+              </div>
             </div>
-            <div class="my-cards-row" id="my-cards-row"></div>
+            <div class="seat-table-zone my-table-zone">
+              <div class="my-cards-row" id="my-cards-row"></div>
+              <div class="mazo-deck-indicator my-mazo-deck" id="my-mazo-deck" style="display: none;" title="Mazo — Vos sos Mano">
+                <div class="mazo-deck-stack">
+                  <div class="truco-card card-back mazo-layer l1"><div class="card-back-pattern"><span class="card-back-emblem">★</span></div></div>
+                  <div class="truco-card card-back mazo-layer l2"><div class="card-back-pattern"><span class="card-back-emblem">★</span></div></div>
+                  <div class="truco-card card-back mazo-layer l3"><div class="card-back-pattern"><span class="card-back-emblem">★</span></div></div>
+                </div>
+                <span class="mazo-deck-label">MANO</span>
+              </div>
+            </div>
+            <div class="arena-seat-header my-seat-header">
+              <div class="seat-badge my-seat-badge">
+                <span class="arena-player-name" id="my-name">You</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -202,6 +233,7 @@
               <span class="tscore-name" id="tscore-name-0">Player 1</span>
               <span class="tscore-stage-badge" id="tscore-stage-0">Malas</span>
             </div>
+            <div class="tscore-delta-badge" id="tscore-delta-0" style="display: none;"></div>
 
             <div class="tscore-half">
               <div class="tscore-half-label">
@@ -231,6 +263,7 @@
               <span class="tscore-name" id="tscore-name-1">Player 2</span>
               <span class="tscore-stage-badge" id="tscore-stage-1">Malas</span>
             </div>
+            <div class="tscore-delta-badge" id="tscore-delta-1" style="display: none;"></div>
 
             <div class="tscore-half">
               <div class="tscore-half-label">

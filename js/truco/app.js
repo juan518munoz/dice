@@ -80,6 +80,11 @@
   let lastNotifiedTurnKey = '';
   let lastNotifiedCallId = '';
 
+  const BLOB_LINGER_MS = 2500;
+  let blobHideTimer = null;
+  let blobScheduledKey = '';
+  let blobHiddenKey = '';
+
   function updateNotifyButtons() {
     if (!Notify) return;
     const label = Notify.getStatusLabel ? Notify.getStatusLabel() : (Notify.isActive() ? 'Alerts: On' : 'Alerts: Off');
@@ -305,8 +310,28 @@
       (Array.isArray(state.playerSpeeches) && state.playerSpeeches[myIdx]) ||
       (state.lastSpeech && state.lastSpeech.playerIdx === myIdx ? state.lastSpeech : null);
 
-    renderPixelBlob(oppSpeechEl, oppSpeechTextEl, oppSpeechObj, 'opp-blob');
-    renderPixelBlob(mySpeechEl, mySpeechTextEl, mySpeechObj, 'my-blob');
+    // Once a call is answered (no pending call), let the blobs linger briefly, then hide them
+    const speechKey = `${oppSpeechObj?.id || ''}|${mySpeechObj?.id || ''}`;
+    let blobsHidden = false;
+    if (state.pendingCall || speechKey === '|') {
+      clearTimeout(blobHideTimer);
+      blobHideTimer = null;
+      blobScheduledKey = '';
+    } else if (blobHiddenKey === speechKey) {
+      blobsHidden = true;
+    } else if (blobScheduledKey !== speechKey) {
+      clearTimeout(blobHideTimer);
+      blobScheduledKey = speechKey;
+      blobHideTimer = setTimeout(() => {
+        blobHiddenKey = speechKey;
+        blobHideTimer = null;
+        oppSpeechEl.style.display = 'none';
+        mySpeechEl.style.display = 'none';
+      }, BLOB_LINGER_MS);
+    }
+
+    renderPixelBlob(oppSpeechEl, oppSpeechTextEl, blobsHidden ? null : oppSpeechObj, 'opp-blob');
+    renderPixelBlob(mySpeechEl, mySpeechTextEl, blobsHidden ? null : mySpeechObj, 'my-blob');
 
     // Opponent Remaining Cards (Card Backs fanned across the table)
     oppCardsRow.innerHTML = '';
@@ -475,8 +500,6 @@
           ${res.tieBreakMano ? '<span class="tanto-chip winner-tanto">Por ser Mano</span>' : ''}
         </div>
       `;
-    } else {
-      tantosHTML = `<span class="tanto-chip">No Querido (dijo "No quiero")</span>`;
     }
 
     envidoResolutionBox.innerHTML = `
